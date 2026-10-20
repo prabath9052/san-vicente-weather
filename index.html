@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>San Vicente Weather</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%20width=%2264%22%20height=%2264%22%3E%3Ccircle%20cx=%2232%22%20cy=%2232%22%20r=%2231%22%20fill=%22%23bfe3f5%22/%3E%3Cg%20stroke=%22%23f2b632%22%20stroke-width=%223%22%20stroke-linecap=%22round%22%3E%3Cpath%20d=%22M38%206v5M50%2011l-3.5%203.5M55%2023h-5M26%2011l3.5%203.5%22/%3E%3C/g%3E%3Ccircle%20cx=%2238%22%20cy=%2223%22%20r=%229%22%20fill=%22%23f7c234%22/%3E%3Cpath%20d=%22M16%2034a7%207%200%200%201%203-13.4a9%209%200%200%201%2017%202.4a6%206%200%200%201%201%2011z%22%20fill=%22%23fff%22/%3E%3Cpath%20d=%22M1.5%2040C14%2033%2026%2036%2036%2039s20%203%2026.5-1A31%2031%200%200%201%201.5%2040z%22%20fill=%22%235fae3e%22/%3E%3Cpath%20d=%22M3%2044c12-5%2024-3%2033%200s18%203%2025-1A31%2031%200%200%201%2032%2063A31%2031%200%200%201%203%2044z%22%20fill=%22%233e8a2f%22/%3E%3Cg%20fill=%22none%22%20stroke=%22%232c6a22%22%20stroke-width=%221.6%22%20stroke-linecap=%22round%22%3E%3Cpath%20d=%22M10%2050q12-4%2024%200t22-1M14%2056q10-3%2020%200t17-1%22/%3E%3C/g%3E%3Cg%20id=%22tractor%22%20stroke=%22%231f2a30%22%20stroke-width=%221.8%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%2232.5%22%20y=%2236%22%20width=%222.6%22%20height=%227%22%20fill=%22%233a3f44%22/%3E%3Cpath%20d=%22M13%2044V33h12l1%209h13v8H13z%22%20fill=%22%23d7322b%22/%3E%3Crect%20x=%2216%22%20y=%2235.5%22%20width=%227%22%20height=%226%22%20fill=%22%23bfe3f5%22%20stroke-width=%221.4%22/%3E%3Ccircle%20cx=%2219%22%20cy=%2250%22%20r=%228%22%20fill=%22%232b2f33%22/%3E%3Ccircle%20cx=%2219%22%20cy=%2250%22%20r=%223%22%20fill=%22%23f2b632%22%20stroke-width=%221.4%22/%3E%3Ccircle%20cx=%2235%22%20cy=%2252%22%20r=%224.6%22%20fill=%22%232b2f33%22/%3E%3Ccircle%20cx=%2235%22%20cy=%2252%22%20r=%221.8%22%20fill=%22%23f2b632%22%20stroke-width=%221.2%22/%3E%3C/g%3E%3C/svg%3E">
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#eef3f7;color:#1d2a35}
+header{background:#24577a;color:#fff;padding:14px 18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+header h1{font-size:1.25rem;margin:0}header small{opacity:.85}.brand{display:flex;align-items:center;gap:10px}.brand svg{flex:none}.brand .sub{display:block;font-size:.8rem;opacity:.9}
+button{background:#f2b632;border:0;border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer}
+main{max-width:1200px;margin:auto;padding:12px}
+.status{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{padding:4px 10px;border-radius:12px;font-size:.8rem;background:#ddd}.ok{background:#c9ecd0}.bad{background:#f6c9c9}.wait{background:#eee}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px}
+.card{background:#fff;border-radius:10px;padding:10px;box-shadow:0 1px 3px #0002;font-size:.85rem}
+.card h3{margin:0 0 4px;font-size:.95rem}.icon{font-size:2rem}.t{font-size:1.05rem;font-weight:600}
+.tag{display:inline-block;font-size:.72rem;padding:2px 6px;border-radius:8px;margin:2px 2px 0 0}
+.frost{background:#cfe3ff}.High{background:#c9ecd0}.Medium{background:#fbe8b0}.Low{background:#f6c9c9}
+section.box{background:#fff;border-radius:10px;padding:12px 16px;margin-top:12px;box-shadow:0 1px 3px #0002}
+h2{font-size:1.05rem;margin:0 0 8px}table{border-collapse:collapse;width:100%;font-size:.78rem}
+td,th{border:1px solid #ddd;padding:3px 5px;text-align:center}.scroll{overflow-x:auto}
+ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
+</style><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head><body>
+<header><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+<circle cx="32" cy="32" r="31" fill="#bfe3f5"/>
+<g stroke="#f2b632" stroke-width="3" stroke-linecap="round"><path d="M38 6v5M50 11l-3.5 3.5M55 23h-5M26 11l3.5 3.5"/></g>
+<circle cx="38" cy="23" r="9" fill="#f7c234"/>
+<path d="M16 34a7 7 0 0 1 3-13.4a9 9 0 0 1 17 2.4a6 6 0 0 1 1 11z" fill="#fff"/>
+<path d="M1.5 40C14 33 26 36 36 39s20 3 26.5-1A31 31 0 0 1 1.5 40z" fill="#5fae3e"/>
+<path d="M3 44c12-5 24-3 33 0s18 3 25-1A31 31 0 0 1 32 63A31 31 0 0 1 3 44z" fill="#3e8a2f"/>
+<g fill="none" stroke="#2c6a22" stroke-width="1.6" stroke-linecap="round"><path d="M10 50q12-4 24 0t22-1M14 56q10-3 20 0t17-1"/></g>
+<g id="tractor" stroke="#1f2a30" stroke-width="1.8" stroke-linejoin="round">
+<rect x="32.5" y="36" width="2.6" height="7" fill="#3a3f44"/>
+<path d="M13 44V33h12l1 9h13v8H13z" fill="#d7322b"/>
+<rect x="16" y="35.5" width="7" height="6" fill="#bfe3f5" stroke-width="1.4"/>
+<circle cx="19" cy="50" r="8" fill="#2b2f33"/><circle cx="19" cy="50" r="3" fill="#f2b632" stroke-width="1.4"/>
+<circle cx="35" cy="52" r="4.6" fill="#2b2f33"/><circle cx="35" cy="52" r="1.8" fill="#f2b632" stroke-width="1.2"/>
+</g>
+</svg><div><h1>San Vicente Weather</h1><span class="sub">San Alberto · Córdoba</span>
+<small>-31.95, -65.15 · Times in ART (UTC-3) · Last updated: <span id="upd">—</span></small></div></div>
+<button id="refresh">Refresh</button></header>
+<main>
+<div class="status" id="status"></div>
+<div class="cards" id="cards"></div>
+<section class="box"><h2>7-day summary</h2><p id="summary">Loading…</p></section>
+<section class="box"><h2>Farm notes</h2><div id="farm">—</div>
+<p class="muted">Spray window = hour with wind &lt;10 km/h, gusts &lt;20 km/h and 0 mm rain (Open-Meteo best_match hourly, 06:00–20:00). Field-work dry day = all sources ≤1 mm and rain chance &lt;30%.</p></section>
+<section class="box"><details><summary><b>Per-model detail table</b></summary><div class="scroll" id="detail"></div></details></section>
+<p class="muted">Sources: Open-Meteo (ECMWF, GFS, ICON, GEM, best match + ECMWF 51-member ensemble), MET Norway/Yr, wttr.in. Values are never invented; “—” = no data.</p>
+</main>
+<script>
+const LAT=-31.95,LON=-65.15,TZ='America/Argentina/Cordoba',TZE=encodeURIComponent(TZ);
+const MODELS=['ecmwf_ifs025','gfs_seamless','icon_seamless','gem_seamless','best_match'];
+const MNAME={ecmwf_ifs025:'ECMWF',gfs_seamless:'GFS',icon_seamless:'ICON',gem_seamless:'GEM',best_match:'Best match',metno:'MET Norway',wttr:'wttr.in'};
+const DV=['temperature_2m_max','temperature_2m_min','precipitation_sum','precipitation_probability_max','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant','weather_code'];
+const $=id=>document.getElementById(id);
+const num=v=>typeof v==='number'&&isFinite(v);
+const f=(v,d=0)=>num(v)?v.toFixed(d):'—';
+const rng=(a,d=0,u='')=>{a=a.filter(num);if(!a.length)return'—';const lo=Math.min(...a),hi=Math.max(...a);return lo.toFixed(d)===hi.toFixed(d)?lo.toFixed(d)+u:lo.toFixed(d)+'–'+hi.toFixed(d)+u};
+const pct=(a,p)=>{a=a.filter(num).sort((x,y)=>x-y);if(!a.length)return null;const i=(a.length-1)*p,l=Math.floor(i);return a[l]+(a[Math.min(l+1,a.length-1)]-a[l])*(i-l)};
+const DIRS=['N','NE','E','SE','S','SW','W','NW'];const dir=d=>num(d)?DIRS[Math.round(d/45)%8]:'—';
+function wc(c){if(!num(c))return['❔','—'];if(c===0)return['☀️','Clear'];if(c<=2)return['🌤️','Partly cloudy'];if(c===3)return['☁️','Overcast'];if(c<=48)return['🌫️','Fog'];if(c<=57)return['🌦️','Drizzle'];if(c<=67)return['🌧️','Rain'];if(c<=77)return['🌨️','Snow'];if(c<=82)return['🌦️','Showers'];if(c<=86)return['🌨️','Snow showers'];return['⛈️','Thunderstorm']}
+const dayName=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+const dayLong=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+async function getJSON(url,ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
+const localDate=iso=>new Date(new Date(iso).getTime()-3*3600e3).toISOString().slice(0,10);
+const localHour=iso=>new Date(new Date(iso).getTime()-3*3600e3).getUTCHours();
+
+async function loadAll(){
+ const st={};const S=(k,ok,msg)=>{st[k]=[ok,msg];renderStatus(st)};
+ ['Open-Meteo models','Open-Meteo hourly','ECMWF ensemble','MET Norway','wttr.in'].forEach(k=>S(k,null,'loading'));
+ const base=`latitude=${LAT}&longitude=${LON}&timezone=${TZE}&forecast_days=7&wind_speed_unit=kmh`;
+ const p=[
+  getJSON(`https://api.open-meteo.com/v1/forecast?${base}&daily=${DV.join(',')}&models=${MODELS.join(',')}`).then(d=>{S('Open-Meteo models',true,'OK');return d},e=>{S('Open-Meteo models',false,e.message);return null}),
+  getJSON(`https://api.open-meteo.com/v1/forecast?${base}&hourly=wind_speed_10m,wind_gusts_10m,precipitation,precipitation_probability&models=best_match`).then(d=>{S('Open-Meteo hourly',true,'OK');return d},e=>{S('Open-Meteo hourly',false,e.message);return null}),
+  getJSON(`https://ensemble-api.open-meteo.com/v1/ensemble?${base}&daily=precipitation_sum,wind_gusts_10m_max&models=ecmwf_ifs025`).then(d=>{S('ECMWF ensemble',true,'OK');return d},e=>{S('ECMWF ensemble',false,e.message);return null}),
+  getJSON(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${LAT}&lon=${LON}`).then(d=>{S('MET Norway',true,'OK');return d},e=>{S('MET Norway',false,'unavailable ('+e.message+')');return null}),
+  getJSON(`https://wttr.in/${LAT},${LON}?format=j1`).then(d=>{S('wttr.in',true,'OK (3 days)');return d},e=>{S('wttr.in',false,'unavailable ('+e.message+')');return null})
+ ];
+ const [om,hr,en,mn,wt]=await Promise.all(p);
+ try{process(om,hr,en,mn,wt)}catch(e){console.error(e);$('summary').textContent='Processing error: '+e.message}
+ $('upd').textContent=new Date().toLocaleString('en-GB',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
+}
+function renderStatus(st){$('status').innerHTML=Object.entries(st).map(([k,[ok,m]])=>`<span class="pill ${ok===null?'wait':ok?'ok':'bad'}">${ok===null?'⏳':ok?'✔':'✖'} ${k}: ${m}</span>`).join('')}
+
+function process(om,hr,en,mn,wt){
+ let days=om?.daily?.time||hr?.hourly?.time&&[...new Set(hr.hourly.time.map(t=>t.slice(0,10)))]||[];
+ if(!days.length){const t=new Date(Date.now()-3*3600e3);for(let i=0;i<7;i++)days.push(new Date(t.getTime()+i*864e5).toISOString().slice(0,10))}
+ days=days.slice(0,7);
+ // per-source daily rows: src -> date -> {tmax,tmin,rain,prob,wind,gust,dir,code}
+ const D={};
+ if(om?.daily)for(const m of MODELS){D[m]={};om.daily.time.forEach((t,i)=>{const g=v=>om.daily[`${v}_${m}`]?.[i];D[m][t]={tmax:g('temperature_2m_max'),tmin:g('temperature_2m_min'),rain:g('precipitation_sum'),prob:g('precipitation_probability_max'),wind:g('wind_speed_10m_max'),gust:g('wind_gusts_10m_max'),dir:g('wind_direction_10m_dominant'),code:g('weather_code')}})}
+ if(mn?.properties?.timeseries){const a={};for(const s of mn.properties.timeseries){const d=localDate(s.time),x=s.data.instant.details;a[d]=a[d]||{t:[],w:[],r:0,rn:0};a[d].t.push(x.air_temperature);if(num(x.wind_speed))a[d].w.push(x.wind_speed*3.6);const r=s.data.next_1_hours?.details?.precipitation_amount;if(num(r)){a[d].r+=r;a[d].rn++}}
+  D.metno={};for(const[d,v]of Object.entries(a)){if(v.t.length<20)continue;D.metno[d]={tmax:Math.max(...v.t),tmin:Math.min(...v.t),wind:v.w.length?Math.max(...v.w):null,rain:v.rn>=20?v.r:null}}}
+ if(wt?.weather){D.wttr={};for(const w of wt.weather){const h=w.hourly||[];D.wttr[w.date]={tmax:+w.maxtempC,tmin:+w.mintempC,rain:h.length?h.reduce((s,x)=>s+(+x.precipMM||0),0):null,prob:h.length?Math.max(...h.map(x=>+x.chanceofrain||0)):null,wind:h.length?Math.max(...h.map(x=>+x.windspeedKmph||0)):null,gust:h.length?Math.max(...h.map(x=>+x.WindGustKmph||0)):null}}}
+ const srcs=Object.keys(D);
+ const E={};if(en?.daily){en.daily.time.forEach((t,i)=>{const r=[],g=[];for(const k in en.daily){if(k.startsWith('precipitation_sum'))r.push(en.daily[k][i]);if(k.startsWith('wind_gusts_10m_max'))g.push(en.daily[k][i])}E[t]={n:r.filter(num).length,rMed:pct(r,.5),rHi:pct(r,.9),gMed:pct(g,.5),gHi:pct(g,.9)}})}
+ // spray windows
+ const SW={};if(hr?.hourly){const h=hr.hourly;h.time.forEach((t,i)=>{const d=t.slice(0,10),H=+t.slice(11,13);if(H<6||H>20)return;SW[d]=SW[d]||{hours:[],n:0};SW[d].n++;if(num(h.wind_speed_10m[i])&&h.wind_speed_10m[i]<10&&num(h.wind_gusts_10m[i])&&h.wind_gusts_10m[i]<20&&num(h.precipitation[i])&&h.precipitation[i]===0)SW[d].hours.push(H)})}
+ const R=days.map(d=>{const v=k=>srcs.map(s=>D[s][d]?.[k]).filter(num);const tx=v('tmax'),tn=v('tmin'),rn=v('rain'),pr=v('prob'),wi=v('wind'),gu=v('gust');
+  const bm=D.best_match?.[d]||{};const spread=tx.length>1?Math.max(Math.max(...tx)-Math.min(...tx),Math.max(...tn)-Math.min(...tn)):null;const rs=rn.length>1?Math.max(...rn)-Math.min(...rn):0;
+  let conf='—';if(spread!==null){conf=spread<=3&&rs<=5?'High':spread<=6&&rs<=15?'Medium':'Low'}
+  return{d,tx,tn,rn,pr,wi,gu,code:bm.code??D.ecmwf_ifs025?.[d]?.code,dir:bm.dir??D.ecmwf_ifs025?.[d]?.dir,frost:tn.some(x=>x<=2),conf,E:E[d],SW:SW[d]}});
+ $('cards').innerHTML=R.map(r=>{const[ic,tx]=wc(r.code);const e=r.E;return`<div class="card"><h3>${dayName(r.d)}</h3><div class="icon" title="${tx}">${ic}</div><div class="muted">${tx}</div>
+ <div class="t">${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')}</div>
+ <div>🌧 ${rng(r.rn,1,' mm')} · ${r.pr.length?Math.max(...r.pr).toFixed(0)+'%':'—'}</div>
+ ${e?`<div class="muted">Ens. rain median ${f(e.rMed,1)} / high ${f(e.rHi,1)} mm</div>`:''}
+ <div>💨 ${rng(r.wi,0)} km/h ${dir(r.dir)}</div><div>Gusts ${rng(r.gu,0,' km/h')}</div>
+ ${e?`<div class="muted">Ens. gust median ${f(e.gMed,0)} / high ${f(e.gHi,0)}</div>`:''}
+ ${r.frost?'<span class="tag frost">❄ Frost risk</span>':''}<span class="tag ${r.conf}">Confidence: ${r.conf}</span></div>`}).join('');
+ // summary
+ const has=R.filter(r=>r.tx.length);let s=[];
+ if(!has.length)s.push('No forecast data could be loaded. Check your internet connection and press Refresh.');else{
+  const mx=r=>Math.max(...r.tx),md=a=>a.length?pct(a,.5):null;
+  const w=has.reduce((a,b)=>md(b.tx)>md(a.tx)?b:a);s.push(`Warmest day: ${dayLong(w.d)} with highs around ${f(md(w.tx))} °C (models ${rng(w.tx,0,' °C')}).`);
+  const c=has.reduce((a,b)=>md(b.tn)<md(a.tn)?b:a);s.push(`Coldest night: ${dayLong(c.d)}, lows near ${f(md(c.tn))} °C.`);
+  const wr=R.filter(r=>r.rn.length);if(wr.length){const x=wr.reduce((a,b)=>md(b.rn)>md(a.rn)?b:a);const tot=wr.reduce((a,b)=>a+md(b.rn),0);
+   s.push(md(x.rn)>=0.5?`Wettest day: ${dayLong(x.d)} with ${rng(x.rn,1,' mm')} expected (median ${f(md(x.rn),1)} mm${x.E?', ensemble high-end '+f(x.E.rHi,1)+' mm':''}). Total 7-day rain about ${f(tot,1)} mm (median of sources).`:`Little or no rain expected all week (7-day total about ${f(tot,1)} mm).`)}
+  const wd=R.filter(r=>r.gu.length&&md(r.gu)>=45);s.push(wd.length?`Windy days (gusts ≥45 km/h): ${wd.map(r=>dayName(r.d)+' ('+rng(r.gu,0,' km/h')+')').join(', ')}.`:'No strongly windy days expected (median gusts below 45 km/h).');
+  const fr=R.filter(r=>r.frost);s.push(fr.length?`Frost risk (some model ≤2 °C): ${fr.map(r=>dayName(r.d)).join(', ')}.`:'No frost risk this week.');
+  const dry=R.filter(r=>r.rn.length&&Math.max(...r.rn)<=1&&(!r.pr.length||Math.max(...r.pr)<30));s.push(dry.length?`Dry days: ${dry.length} of ${R.length} (${dry.map(r=>dayName(r.d)).join(', ')}).`:'No fully dry days with high confidence.');
+  const lo=R.filter(r=>r.conf==='Low');if(lo.length)s.push(`Lower confidence on ${lo.map(r=>dayName(r.d)).join(', ')} — models disagree.`)}
+ $('summary').textContent=s.join(' ');
+ // farm
+ const grp=h=>{const o=[];h.forEach(x=>{const l=o[o.length-1];if(l&&l[1]===x-1)l[1]=x;else o.push([x,x])});return o.map(([a,b])=>`${String(a).padStart(2,'0')}:00–${String(b+1).padStart(2,'0')}:00`).join(', ')};
+ const dry=R.filter(r=>r.rn.length&&Math.max(...r.rn)<=1&&(!r.pr.length||Math.max(...r.pr)<30));
+ $('farm').innerHTML=`<b>Best spraying windows</b><ul>${R.map(r=>`<li>${dayName(r.d)}: ${!r.SW?'—':r.SW.hours.length?grp(r.SW.hours)+` (${r.SW.hours.length} h)`:'no suitable hours'}</li>`).join('')}</ul>
+ <b>Field-work dry days:</b> ${dry.length?dry.map(r=>dayName(r.d)).join(', '):'none confirmed'}`;
+ // detail
+ const K=[['tmax','Max °C',1],['tmin','Min °C',1],['rain','Rain mm',1],['prob','Rain %',0],['wind','Wind km/h',0],['gust','Gust km/h',0],['dir','Dir',-1]];
+ $('detail').innerHTML=`<table><tr><th>Source</th><th>Var</th>${days.map(d=>`<th>${dayName(d)}</th>`).join('')}</tr>${srcs.map(s=>K.map(([k,l,dg],i)=>`<tr>${i?'':`<th rowspan="${K.length}">${MNAME[s]}</th>`}<td>${l}</td>${days.map(d=>{const v=D[s][d]?.[k];return`<td>${dg<0?(num(v)?dir(v):'—'):f(v,dg)}</td>`}).join('')}</tr>`).join('')).join('')}</table>`;
+}
+$('refresh').onclick=loadAll;loadAll();
+</script></body></html>
