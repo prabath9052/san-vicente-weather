@@ -16,7 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: python scripts/fetch_precip.py
+      - run: pip install requests
+      - run: python -u scripts/fetch_precip.py
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"

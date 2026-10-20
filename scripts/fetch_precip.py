@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Fetch an hourly + daily precipitation grid (median of 5 Open-Meteo models) and write data/precip.json.
 Paced to respect Open-Meteo free-tier limits (~600 location-calls/min)."""
-import json, time, statistics, urllib.request, urllib.error, datetime, os
+import json, time, statistics, datetime, os
+import requests
+SESSION = requests.Session()  # keep-alive: avoids a new TLS handshake per batch
 S, N, W, E, STEP = -42.0, -20.0, -75.5, -50.0, 0.75
 MODELS = ['ecmwf_ifs025', 'gfs_seamless', 'icon_seamless', 'gem_seamless', 'best_match']
 TZ = 'America/Argentina/Cordoba'
@@ -17,13 +19,15 @@ def med(v):
 def get(url):
     for a in range(6):
         try:
-            with urllib.request.urlopen(url, timeout=90) as r:
-                return json.load(r)
-        except urllib.error.HTTPError as e:
-            wait = 65 if e.code == 429 else 15
-            print(f'HTTP {e.code}, retry in {wait}s'); time.sleep(wait)
+            r = SESSION.get(url, timeout=(15, 120))
+            if r.status_code == 200:
+                return r.json()
+            wait = 65 if r.status_code == 429 else 15
+            print(f'HTTP {r.status_code}, retry in {wait}s', flush=True)
         except Exception as e:
-            print('error', e); time.sleep(15)
+            wait = 5
+            print('error', e, flush=True)
+        time.sleep(wait)
     raise SystemExit('giving up')
 
 res = [None] * len(pts)
@@ -35,7 +39,7 @@ for i in range(0, len(pts), BATCH):
            ','.join(MODELS) + '&timezone=' + TZ.replace('/', '%2F') + '&forecast_days=7')
     d = get(url); d = d if isinstance(d, list) else [d]
     for j, r in enumerate(d): res[i + j] = r
-    print(f'{i + len(b)}/{len(pts)} points, {time.time() - t0:.0f}s')
+    print(f'{i + len(b)}/{len(pts)} points, {time.time() - t0:.0f}s', flush=True)
     if i + BATCH < len(pts): time.sleep(PAUSE)
 
 ref = next(r for r in res if r)

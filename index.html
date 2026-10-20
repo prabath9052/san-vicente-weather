@@ -21,7 +21,7 @@ td,th{border:1px solid #ddd;padding:3px 5px;text-align:center}.scroll{overflow-x
 ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 #pmap{position:relative;width:100%;height:min(70vh,560px);min-height:360px;border-radius:10px;overflow:hidden;background:#cdd9e0}
 #pmap .leaflet-container{background:#cdd9e0}#pmap .leaflet-tile-pane{filter:saturate(.6) sepia(.15)}
-.pm-legend{position:absolute;left:8px;bottom:50px;z-index:500;background:#fffe;border-radius:6px;padding:4px 5px;font:11px/1 Segoe UI,Arial,sans-serif;box-shadow:0 1px 3px #0003}
+.pm-legend{position:absolute;left:8px;bottom:78px;z-index:500;background:#fffe;border-radius:6px;padding:4px 5px;font:11px/1 Segoe UI,Arial,sans-serif;box-shadow:0 1px 3px #0003}
 .pm-legend b{display:block;text-align:center;margin-bottom:3px;font-size:10px}.pm-legend div{display:flex;align-items:center;gap:4px;height:12px}.pm-legend i{width:12px;height:11px;display:inline-block}
 .pm-bar{position:absolute;left:0;right:0;bottom:0;z-index:500;display:flex;align-items:stretch;background:#2b3a46e6;color:#fff;height:40px;font-size:.8rem}
 .pm-bar button{background:transparent;color:#fff;border:0;border-radius:0;padding:0 10px;font-size:1rem}.pm-bar button:hover{background:#ffffff22}
@@ -40,7 +40,10 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 .hm-b{overflow:auto;padding:8px 12px 14px;-webkit-overflow-scrolling:touch}
 .hm-b table{font-size:.8rem}.hm-b th{position:sticky;top:-8px;background:#e6eef4;z-index:1}.hm-b td{white-space:nowrap}.hm-b td.l{text-align:left}.hm-b .sp{color:#889;font-size:.7rem;display:block}
 .show-m{display:none!important}.hm-chart{width:100%;height:150px;display:block;margin-bottom:6px}
-@media(max-width:600px){.hm-bg.on{align-items:stretch}.hm{width:100vw;max-height:none;height:100%;border-radius:0}.hm-b table{font-size:.7rem}.hm-b td,.hm-b th{padding:3px 2px}.hm-b{padding:6px 4px 12px}.hm-chart{height:120px}.pm-time{top:auto;bottom:48px;left:auto;right:6px}.hm-b .hide-m{display:none}.hm-b .show-m{display:block!important}}
+@media(max-width:600px){.hm-bg.on{align-items:stretch}.hm{width:100vw;max-height:none;height:100%;border-radius:0}.hm-b table{font-size:.7rem}.hm-b td,.hm-b th{padding:3px 2px}.hm-b{padding:6px 4px 12px}.hm-chart{height:120px}.pm-time{top:auto;bottom:78px;left:auto;right:6px}.hm-b .hide-m{display:none}.hm-b .show-m{display:block!important}}
+.pm-hbar{position:absolute;left:0;right:0;bottom:40px;z-index:500;display:flex;align-items:center;gap:8px;background:#2b3a46cc;color:#fff;height:30px;padding:0 10px;font-size:.78rem}
+.pm-hbar input{flex:1;accent-color:#f2b632}.pm-hbar b{min-width:40px;text-align:right}
+.pm-bar #pmMode{font-size:.75rem;font-weight:700;border-left:1px solid #ffffff2a;white-space:nowrap}.pm-bar #pmMode[aria-pressed=true]{background:#f2b632;color:#1d2a35}.pm-bar #pmMode:disabled{opacity:.4}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
@@ -66,17 +69,17 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 <div class="status" id="status"></div>
 <div class="cards" id="cards"></div>
 <section class="box"><h2>7-day summary</h2><p id="summary">Loading…</p></section>
-<section class="box" id="mapbox"><h2>Precipitation map — daily total (mm)</h2>
+<section class="box" id="mapbox"><h2>Precipitation map — hourly &amp; daily (mm)</h2>
 <div id="pmap"><div class="pm-msg" id="pmMsg">Loading precipitation grid…</div><div class="pm-time" id="pmTime"></div><div class="pm-legend" id="pmLegend"></div>
-<div class="pm-bar"><button id="pmPlay" title="Play" aria-label="Play">▶</button><div class="pm-days" id="pmDays"></div><button id="pmPrev" aria-label="Previous day">‹</button><button id="pmNext" aria-label="Next day">›</button></div></div>
+<div class="pm-hbar" id="pmHbar"><span>Hour</span><input type="range" id="pmHr" min="0" max="23" step="1" value="0" aria-label="Hour of day"><b id="pmHrL">00:00</b></div><div class="pm-bar"><button id="pmPlay" title="Play" aria-label="Play">▶</button><div class="pm-days" id="pmDays"></div><button id="pmPrev" aria-label="Previous">‹</button><button id="pmNext" aria-label="Next">›</button><button id="pmMode" aria-pressed="false" title="Switch between hourly and daily total">Day total</button></div></div>
 <p style="margin:.6em 0 0;font-size:.9em"><a href="https://www.meteoblue.com/es/tiempo/mapas/san-vicente_argentina_3835760#coords=4.76/-31.8/-64.82&amp;map=cloudsAndPrecipitation~hourly~auto~sfc~none" target="_blank" rel="noopener">Open in meteoblue ↗</a></p>
-<p class="muted" style="margin:.3em 0 0">Overlay: median of Open-Meteo models (ECMWF, GFS, ICON, GEM, best match) daily precipitation on a 0.75° grid (~1,000 points, fetched in paced batches to respect Open-Meteo's free rate limit, then cached 3 h in your browser). The San Vicente label shows the 7-day summary value (median of all sources). Basemap © Esri (World Shaded Relief), boundaries &amp; labels © Esri. Map: Leaflet.</p></section>
+<p class="muted" style="margin:.3em 0 0">Overlay: median of Open-Meteo models (ECMWF, GFS, ICON, GEM, best match) on a 0.75° grid (~1,050 points) — hourly precipitation (mm in the hour ending at the time shown) or daily total. Grid is pre-computed every 3 h by a GitHub Action (falls back to a slower direct Open-Meteo daily fetch if the file is missing or stale). The San Vicente label shows the app's own forecast: model-median mm for the selected hour, or the 7-day summary value for day totals. <span id="pmSrc"></span> Basemap © Esri (World Shaded Relief), boundaries &amp; labels © Esri. Map: Leaflet.</p></section>
 <section class="box"><h2>Farm notes</h2><div id="farm">—</div>
 <p class="muted">Spray window = hour with wind &lt;10 km/h, gusts &lt;20 km/h and 0 mm rain (Open-Meteo best_match hourly, 06:00–20:00). Field-work dry day = all sources ≤1 mm and rain chance &lt;30%.</p></section>
 <section class="box"><details><summary><b>Per-model detail table</b></summary><div class="scroll" id="detail"></div></details></section>
 <p class="muted">Sources: Open-Meteo (ECMWF, GFS, ICON, GEM, best match + ECMWF 51-member ensemble), MET Norway/Yr, wttr.in. Values are never invented; “—” = no data.</p>
 </main>
-<div class="hm-bg" id="hmBg" role="dialog" aria-modal="true" aria-labelledby="hmTitle"><div class="hm"><div class="hm-h"><button id="hmPrev" aria-label="Previous day">‹</button><h3 id="hmTitle"></h3><button id="hmNext" aria-label="Next day">›</button><button id="hmX" aria-label="Close">✕</button></div><div class="hm-b" id="hmBody"></div></div></div>
+<div class="hm-bg" id="hmBg" role="dialog" aria-modal="true" aria-labelledby="hmTitle"><div class="hm"><div class="hm-h"><button id="hmPrev" aria-label="Previous">‹</button><h3 id="hmTitle"></h3><button id="hmNext" aria-label="Next day">›</button><button id="hmX" aria-label="Close">✕</button></div><div class="hm-b" id="hmBody"></div></div></div>
 
 <script>
 const LAT=-31.95,LON=-65.15,TZ='America/Argentina/Cordoba',TZE=encodeURIComponent(TZ);
@@ -166,7 +169,10 @@ $('refresh').onclick=loadAll;loadAll();
 </script>
 <script>
 (function(){
-const LEG=[[0.25,'#b4f0f5'],[0.5,'#8ad8f0'],[1,'#5fb8ef'],[1.5,'#4192ea'],[2,'#3270e0'],[3,'#2a50d0'],[5,'#1f2fa8'],[7,'#2e9e45'],[10,'#9acd32'],[15,'#f0e030'],[20,'#f5a020'],[25,'#f06030'],[30,'#d01010']];
+const COLS=['#b4f0f5','#8ad8f0','#5fb8ef','#4192ea','#3270e0','#2a50d0','#1f2fa8','#2e9e45','#9acd32','#f0e030','#f5a020','#f06030','#d01010'];
+const TH={day:[0.25,0.5,1,1.5,2,3,5,7,10,15,20,25,30],hour:[0.1,0.2,0.3,0.5,0.75,1,1.5,2,3,5,7,10,15]};
+const PURL=location.protocol==='file:'?'https://prabath9052.github.io/san-vicente-weather/data/precip.json':'data/precip.json';
+const STALE_H=9;
 const B={s:-42,n:-20,w:-75.5,e:-50},STEP=0.75,V={s:-42,n:-20,w:-75,e:-50};
 const lats=[],lons=[];for(let y=B.s;y<=B.n+1e-9;y+=STEP)lats.push(+y.toFixed(3));for(let x=B.w;x<=B.e+1e-9;x+=STEP)lons.push(+x.toFixed(3));
 const BB=L.latLngBounds([[V.s,V.w],[V.n,V.e]]);const map=L.map('pmap',{zoomSnap:.25,scrollWheelZoom:false,maxBounds:BB.pad(.3),attributionControl:false});L.control.attribution({position:'topright'}).addTo(map);
@@ -174,49 +180,76 @@ const fit=()=>map.setView(BB.getCenter(),map.getBoundsZoom(BB,false));fit();new 
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',{maxZoom:13,attribution:'© Esri',opacity:.85}).addTo(map);
 map.createPane('lbl');map.getPane('lbl').style.zIndex=450;map.getPane('lbl').style.pointerEvents='none';
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{pane:'lbl',opacity:.7,attribution:'Labels © Esri'}).addTo(map);
-document.getElementById('pmLegend').innerHTML='<b>mm</b>'+LEG.slice().reverse().map(([v,c])=>`<div><i style="background:${c}"></i>${v}</div>`).join('');
 const dot=L.circleMarker([LAT,LON],{radius:6,color:'#fff',weight:2,fillColor:'#2a6fdb',fillOpacity:1}).addTo(map);
-const msg=(t,err)=>{const m=document.getElementById('pmMsg');m.style.display=t?'block':'none';m.textContent=t||'';m.className='pm-msg'+(err?' err':'')};
-const rgb=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const LRGB=LEG.map(([v,c])=>[v,rgb(c)]);
-const col=v=>{if(!(v>=0.25))return null;let c=LRGB[0][1];for(const[t,k]of LRGB)if(v>=t)c=k;return c};
-let grid=null,days=[],cur=0,ov=null,timer=null;
+const $m=id=>document.getElementById(id);
+const msg=(t,err)=>{const m=$m('pmMsg');m.style.display=t?'block':'none';m.textContent=t||'';m.className='pm-msg'+(err?' err':'')};
+const rgb=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const CRGB=COLS.map(rgb);
+let mode='hour',grid=null,days=[],cur=0,hr=0,ov=null,timer=null;
+const th=()=>TH[mode];
+const col=v=>{const t=th();if(!(v>=t[0]))return null;let k=0;for(let i=0;i<t.length;i++)if(v>=t[i])k=i;return CRGB[k]};
+function legend(){$m('pmLegend').innerHTML=`<b>${mode==='hour'?'mm/h':'mm/day'}</b>`+th().map((v,i)=>[v,COLS[i]]).reverse().map(([v,c])=>`<div><i style="background:${c}"></i>${v}</div>`).join('')}
 function med(a){a=a.filter(v=>typeof v==='number'&&isFinite(v)).sort((x,y)=>x-y);if(!a.length)return null;const i=(a.length-1)/2,l=Math.floor(i);return a[l]+(a[Math.min(l+1,a.length-1)]-a[l])*(i-l)}
-async function loadGrid(){
+async function loadFile(){const t0=performance.now();const j=await getJSON(PURL+'?v='+Math.floor(Date.now()/6e5),30000);
+ if(!j?.hourly?.length||j.nx!==lons.length||j.ny!==lats.length)throw new Error('bad file');
+ const age=(Date.now()-Date.parse(j.generated))/36e5;
+ const sc=a=>a.map(r=>Float32Array.from(r,v=>v/10));
+ return{src:'file',age,ms:performance.now()-t0,generated:j.generated,days:j.days,start:j.start,hourly:sc(j.hourly),daily:sc(j.daily)}}
+async function loadBrowser(){ // fallback: daily totals only, paced
  const pts=[];for(const la of lats)for(const lo of lons)pts.push([la,lo]);
- const ck='svpm3_'+Math.floor((Date.now()-3*3600e3)/108e5);try{const c=JSON.parse(localStorage.getItem(ck));if(c&&c.time&&c.time.length)return c}catch(e){}
+ const ck='svpm3_'+Math.floor((Date.now()-3*3600e3)/108e5);try{const c=JSON.parse(localStorage.getItem(ck));if(c&&c.time&&c.time.length)return{src:'browser',days:c.time,daily:c.v,hourly:null}}catch(e){}
  const out=new Array(pts.length),N=100,sl=ms=>new Promise(r=>setTimeout(r,ms));
  for(let i=0;i<pts.length;i+=N){const b=pts.slice(i,i+N);
   const u=`https://api.open-meteo.com/v1/forecast?latitude=${b.map(p=>p[0]).join(',')}&longitude=${b.map(p=>p[1]).join(',')}&daily=precipitation_sum&models=${MODELS.join(',')}&timezone=${TZE}&forecast_days=7`;
   if(i)await sl(9000);let d=null,err;for(let a=0;a<4&&!d;a++){try{d=await getJSON(u,45000)}catch(e){err=e;if(a<3){msg('Open-Meteo busy (rate limit) — retrying…');await sl(30000)}}}
-  if(!d)throw err;(Array.isArray(d)?d:[d]).forEach((r,j)=>{out[i+j]=r.daily});msg(`Loading precipitation grid… ${Math.min(100,Math.round((i+N)/pts.length*100))}%`)}
- const t=out.find(Boolean)?.time||[];
- const g={time:t,v:t.map((_,k)=>out.map(d=>d?med(MODELS.map(m=>d[`precipitation_sum_${m}`]?.[k])):null))};
- try{Object.keys(localStorage).filter(k=>k.startsWith('svpm')).forEach(k=>localStorage.removeItem(k));localStorage.setItem(ck,JSON.stringify(g))}catch(e){}return g}
+  if(!d)throw err;(Array.isArray(d)?d:[d]).forEach((r,j)=>{out[i+j]=r.daily});msg(`Map file unavailable — loading daily grid from Open-Meteo… ${Math.min(100,Math.round((i+N)/pts.length*100))}%`)}
+ const t=out.find(Boolean)?.time||[];const v=t.map((_,k)=>out.map(d=>d?med(MODELS.map(m=>d[`precipitation_sum_${m}`]?.[k])):null));
+ try{Object.keys(localStorage).filter(k=>k.startsWith('svpm')).forEach(k=>localStorage.removeItem(k));localStorage.setItem(ck,JSON.stringify({time:t,v}))}catch(e){}
+ return{src:'browser',days:t,daily:v,hourly:null}}
+async function loadGrid(){let f=null;try{f=await loadFile()}catch(e){console.warn('precip.json:',e.message)}
+ if(f&&f.age<=STALE_H)return f;
+ try{return await loadBrowser()}catch(e){if(f){f.staleNote=true;return f}throw e}}
+function hIdx(){if(!grid?.start)return-1;const s=Date.parse(grid.start+':00Z');return Math.round((Date.parse(days[cur]+'T'+String(hr).padStart(2,'0')+':00:00Z')-s)/36e5)}
+function vals(){if(mode==='day')return grid.daily[cur];const k=hIdx();return grid.hourly?.[k]}
 function render(){
- if(ov){map.removeLayer(ov);ov=null}if(!grid)return;const vals=grid.v[cur];if(!vals)return;
+ if(ov){map.removeLayer(ov);ov=null}if(!grid)return;const vv=vals();if(!vv){label();return}
  const nx=lons.length,ny=lats.length,W=nx*8,H=ny*10,cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d'),im=cx.createImageData(W,H);
  const my=la=>Math.log(Math.tan(Math.PI/4+la*Math.PI/360)),yN=my(B.n),yS=my(B.s);
- const at=(i,j)=>{const v=vals[Math.max(0,Math.min(ny-1,j))*nx+Math.max(0,Math.min(nx-1,i))];return v??0};
+ const at=(i,j)=>{const v=vv[Math.max(0,Math.min(ny-1,j))*nx+Math.max(0,Math.min(nx-1,i))];return v??0};
  for(let py=0;py<H;py++){const la=(2*Math.atan(Math.exp(yN-(py+.5)/H*(yN-yS)))-Math.PI/2)*180/Math.PI;const fj=(la-B.s)/STEP,j=Math.floor(fj),dj=fj-j;
   for(let px=0;px<W;px++){const fi=(px+.5)/W*(nx-1),i=Math.floor(fi),di=fi-i;
    const v=(at(i,j)*(1-di)+at(i+1,j)*di)*(1-dj)+(at(i,j+1)*(1-di)+at(i+1,j+1)*di)*dj;const c=col(v);if(!c)continue;const o=(py*W+px)*4;
-   im.data[o]=c[0];im.data[o+1]=c[1];im.data[o+2]=c[2];const ef=Math.min(1,px/(W*.06),(W-px)/(W*.06),py/(H*.06),(H-py)/(H*.06));im.data[o+3]=(v<1?150:185)*ef}}
+   const ef=Math.min(1,px/(W*.06),(W-px)/(W*.06),py/(H*.06),(H-py)/(H*.06));im.data[o]=c[0];im.data[o+1]=c[1];im.data[o+2]=c[2];im.data[o+3]=(v<th()[2]?150:185)*ef}}
  cx.putImageData(im,0,0);
- ov=L.imageOverlay(cv.toDataURL(),[[B.s,B.w-STEP/2*0],[B.n,B.e]],{opacity:.9,interactive:false}).addTo(map);ov.getElement().style.imageRendering='auto';label()}
+ ov=L.imageOverlay(cv.toDataURL(),[[B.s,B.w],[B.n,B.e]],{opacity:.9,interactive:false}).addTo(map);label()}
 const dn=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'});
-function label(){const d=days[cur];if(!d)return;const r=(window.SVR||[]).find(x=>x.d===d);const v=r?med(r.rn):null;
- dot.unbindTooltip().bindTooltip(`San Vicente · ${dn(d)}: ${v==null?'—':v.toFixed(1)+' mm'}`,{permanent:true,direction:'right',offset:[8,0],className:'pm-lbl'}).openTooltip();
- const t=document.getElementById('pmTime');t.style.display='block';t.textContent=new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})+' · 00–24 h GMT-03 total';
- document.querySelectorAll('#pmDays div').forEach((e,i)=>e.classList.toggle('on',i===cur))}
+const HH=h=>String(h).padStart(2,'0')+':00';
+function svHour(d,h){const H=window.SV_HR?.hourly;if(!H)return null;const i=H.time.indexOf(d+'T'+HH(h));if(i<0)return null;return med(MODELS.map(m=>H[`precipitation_${m}`]?.[i]))}
+function label(){const d=days[cur];if(!d)return;let t;
+ if(mode==='day'){const r=(window.SVR||[]).find(x=>x.d===d);const v=r?med(r.rn):null;t=`San Vicente · ${dn(d)}: ${v==null?'—':v.toFixed(1)+' mm'}`}
+ else{const v=svHour(d,hr);t=`San Vicente · ${HH(hr)}: ${v==null?'—':v.toFixed(1)+' mm/h'}`}
+ dot.unbindTooltip().bindTooltip(t,(innerWidth<600?{permanent:true,direction:'top',offset:[0,-8],className:'pm-lbl'}:{permanent:true,direction:'right',offset:[8,0],className:'pm-lbl'})).openTooltip();
+ $m('pmTime').style.display='block';$m('pmTime').textContent=mode==='day'?`${dn(d)} · day total 00–24 GMT-03`:`${dn(d)} · ${HH(hr)} GMT-03`+(vals()?'':' · no data');
+ document.querySelectorAll('#pmDays div').forEach((e,i)=>e.classList.toggle('on',i===cur));
+ $m('pmHr').value=hr;$m('pmHrL').textContent=HH(hr);$m('pmHbar').style.display=mode==='hour'?'flex':'none';
+ $m('pmMode').textContent=mode==='hour'?'Day total':'Hourly';$m('pmMode').setAttribute('aria-pressed',mode==='day');
+ $m('pmMode').disabled=!grid?.hourly;}
 function setDay(i){cur=(i+days.length)%days.length;render()}
-function bar(){document.getElementById('pmDays').innerHTML=days.map((d,i)=>`<div data-i="${i}">${dn(d)}</div>`).join('');
+function step(n){if(mode==='day')return setDay(cur+n);let h=hr+n,c=cur;if(h>23){h=0;c=(c+1)%days.length}if(h<0){h=23;c=(c-1+days.length)%days.length}hr=h;cur=c;render()}
+function bar(){$m('pmDays').innerHTML=days.map((d,i)=>`<div data-i="${i}">${dn(d)}</div>`).join('');
  document.querySelectorAll('#pmDays div').forEach(e=>e.onclick=()=>{stop();setDay(+e.dataset.i)})}
-function stop(){clearInterval(timer);timer=null;document.getElementById('pmPlay').textContent='▶'}
-document.getElementById('pmPlay').onclick=()=>{if(timer)return stop();document.getElementById('pmPlay').textContent='❚❚';timer=setInterval(()=>setDay(cur+1),1500)};
-document.getElementById('pmPrev').onclick=()=>{stop();setDay(cur-1)};document.getElementById('pmNext').onclick=()=>{stop();setDay(cur+1)};
+function stop(){clearInterval(timer);timer=null;$m('pmPlay').textContent='▶'}
+$m('pmPlay').onclick=()=>{if(timer)return stop();$m('pmPlay').textContent='❚❚';timer=setInterval(()=>step(1),mode==='hour'?700:1500)};
+$m('pmPrev').onclick=()=>{stop();step(-1)};$m('pmNext').onclick=()=>{stop();step(1)};
+$m('pmHr').oninput=e=>{stop();hr=+e.target.value;render()};
+$m('pmMode').onclick=()=>{stop();mode=mode==='hour'?'day':'hour';legend();render()};
 window.pmOnData=()=>{if(days.length)label()};
-loadGrid().then(g=>{grid=g;days=g.time.slice(0,7);if(!days.length)throw new Error('no data');
- const today=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);cur=Math.max(0,days.indexOf(today));bar();render();msg('');window.SVMAP_READY=true})
+const T0=performance.now();legend();
+loadGrid().then(g=>{grid=g;days=(g.days||[]).slice(0,7);if(!days.length)throw new Error('no data');if(!g.hourly)mode='day';legend();
+ const now=new Date(Date.now()-3*3600e3),today=now.toISOString().slice(0,10);cur=Math.max(0,days.indexOf(today));hr=now.getUTCHours();bar();render();
+ msg(g.staleNote?`Showing older map data (updated ${Math.round(g.age)} h ago).`:g.src==='browser'?'Hourly map file unavailable — showing daily totals from Open-Meteo.':'');
+ if(g.staleNote||g.src==='browser')setTimeout(()=>msg(''),8000);
+ const gen=g.generated?new Date(g.generated).toLocaleString('en-GB',{timeZone:TZ,dateStyle:'short',timeStyle:'short'})+' GMT-03':'just now (browser)';
+ $m('pmSrc').textContent=`Map data updated ${gen}.`;window.SVMAP_MS=Math.round(performance.now()-T0);window.SVMAP_READY=true})
  .catch(e=>{msg('Precipitation map data could not be loaded ('+e.message+'). Press Refresh or try again later.',true);window.SVMAP_READY='error'});
 })();
 </script>
