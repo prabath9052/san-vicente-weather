@@ -190,7 +190,7 @@ const PURL=location.protocol==='file:'?'https://prabath9052.github.io/san-vicent
 const STALE_H=9;
 const B={s:-42,n:-20,w:-75.5,e:-50},STEP=0.75,V={s:-42,n:-20,w:-75,e:-50};
 const lats=[],lons=[];for(let y=B.s;y<=B.n+1e-9;y+=STEP)lats.push(+y.toFixed(3));for(let x=B.w;x<=B.e+1e-9;x+=STEP)lons.push(+x.toFixed(3));
-const BB=L.latLngBounds([[V.s,V.w],[V.n,V.e]]);const map=L.map('pmap',{zoomSnap:.25,scrollWheelZoom:false,maxBounds:BB.pad(.3),attributionControl:false});L.control.attribution({position:'topright'}).addTo(map);window.SVMAP=map;
+const BB=L.latLngBounds([[V.s,V.w],[V.n,V.e]]);const map=L.map('pmap',{zoomSnap:.25,zoomDelta:.5,scrollWheelZoom:true,wheelPxPerZoomLevel:100,wheelDebounceTime:40,touchZoom:true,doubleClickZoom:true,minZoom:4,maxZoom:12,maxBounds:BB.pad(.3),attributionControl:false});L.control.attribution({position:'topright'}).addTo(map);window.SVMAP=map;
 const fit=()=>map.setView(BB.getCenter(),map.getBoundsZoom(BB,false));fit();new ResizeObserver(()=>{map.invalidateSize();fit()}).observe(document.getElementById('pmap'));
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',{maxZoom:13,attribution:'© Esri',opacity:.85}).addTo(map);
 map.createPane('lbl');map.getPane('lbl').style.zIndex=450;map.getPane('lbl').style.pointerEvents='none';
