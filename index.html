@@ -292,7 +292,7 @@ function hours(d){const h=window.SV_HR?.hourly;if(!h)return null;const out=[];
 // Icon/label derived from the DISPLAYED values (scaled rain, model count, median cloud) so they always agree.
 function deriveCode(x){const rv=x.rv||0,codes=(x.codes||[]).filter(num),n=x.rn||0;
  const thunder=codes.filter(c=>c>=95).length,fog=codes.filter(c=>c===45||c===48).length,snow=codes.filter(c=>c>=71&&c<=77||c===85||c===86).length,show=codes.filter(c=>c>=80&&c<=82).length;
- if(rv>=0.1&&n>=2){if(thunder>=2)return 95;if(snow>codes.length/2)return rv>=1?73:71;if(rv>=4)return show>=2?82:65;if(rv>=1)return show>=2?81:63;return show>=2?80:51}
+ if(rv>=0.1&&n>=2){if(thunder>=2)return 95;if(snow>codes.length/2)return rv>=1?73:71;if(rv>=4)return show>=2?82:65;if(rv>=1)return show>=2?81:63;return show>=2?80:61}
  if(fog>codes.length/2)return 45;const cc=x.cc;if(!num(cc))return x.code0??3;return cc<20?0:cc<=50?1:cc<=85?2:3}
 window.svDayCode=function(r){const H=hours(r.d);if(!H||!H.length)return r.code;const rain=r.rn.length?pct(r.rn,.5):0,wet=r.rn.filter(v=>v>=0.1).length;
  if(rain>=0.1&&wet>=2){if(H.some(x=>x.code>=95))return 95;if(rain>=15)return 65;if(rain>=5)return 63;if(rain>=1)return 61;return 80}
