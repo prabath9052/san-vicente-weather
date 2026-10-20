@@ -64,7 +64,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 <circle cx="35" cy="52" r="4.6" fill="#2b2f33"/><circle cx="35" cy="52" r="1.8" fill="#f2b632" stroke-width="1.2"/>
 </g>
 </svg><div><h1>San Vicente Weather</h1><span class="sub">San Alberto · Córdoba</span>
-<small>-31.95, -65.15 · Times in ART (UTC-3) · Last updated: <span id="upd">—</span></small></div></div>
+<small>-31.85, -65.43 · Times in ART (UTC-3) · Last updated: <span id="upd">—</span></small></div></div>
 <button id="refresh">Refresh</button></header>
 <main>
 <div class="status" id="status"></div>
@@ -82,7 +82,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 <div class="hm-bg" id="hmBg" role="dialog" aria-modal="true" aria-labelledby="hmTitle"><div class="hm"><div class="hm-h"><button id="hmPrev" aria-label="Previous">‹</button><h3 id="hmTitle"></h3><button id="hmNext" aria-label="Next day">›</button><button id="hmX" aria-label="Close">✕</button></div><div class="hm-b" id="hmBody"></div></div></div>
 
 <script>
-const LAT=-31.95,LON=-65.15,TZ='America/Argentina/Cordoba',TZE=encodeURIComponent(TZ);
+const LAT=-31.8506,LON=-65.4294,TZ='America/Argentina/Cordoba',TZE=encodeURIComponent(TZ);
 const MODELS=['ecmwf_ifs025','gfs_seamless','icon_seamless','gem_seamless','best_match'];
 const MNAME={ecmwf_ifs025:'ECMWF',gfs_seamless:'GFS',icon_seamless:'ICON',gem_seamless:'GEM',best_match:'Best match',metno:'MET Norway',wttr:'wttr.in'};
 const DV=['temperature_2m_max','temperature_2m_min','precipitation_sum','precipitation_probability_max','wind_speed_10m_max','wind_gusts_10m_max','wind_direction_10m_dominant','weather_code'];
@@ -190,7 +190,7 @@ const PURL=location.protocol==='file:'?'https://prabath9052.github.io/san-vicent
 const STALE_H=9;
 const B={s:-42,n:-20,w:-75.5,e:-50},STEP=0.75,V={s:-42,n:-20,w:-75,e:-50};
 const lats=[],lons=[];for(let y=B.s;y<=B.n+1e-9;y+=STEP)lats.push(+y.toFixed(3));for(let x=B.w;x<=B.e+1e-9;x+=STEP)lons.push(+x.toFixed(3));
-const BB=L.latLngBounds([[V.s,V.w],[V.n,V.e]]);const map=L.map('pmap',{zoomSnap:.25,scrollWheelZoom:false,maxBounds:BB.pad(.3),attributionControl:false});L.control.attribution({position:'topright'}).addTo(map);
+const BB=L.latLngBounds([[V.s,V.w],[V.n,V.e]]);const map=L.map('pmap',{zoomSnap:.25,scrollWheelZoom:false,maxBounds:BB.pad(.3),attributionControl:false});L.control.attribution({position:'topright'}).addTo(map);window.SVMAP=map;
 const fit=()=>map.setView(BB.getCenter(),map.getBoundsZoom(BB,false));fit();new ResizeObserver(()=>{map.invalidateSize();fit()}).observe(document.getElementById('pmap'));
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',{maxZoom:13,attribution:'© Esri',opacity:.85}).addTo(map);
 map.createPane('lbl');map.getPane('lbl').style.zIndex=450;map.getPane('lbl').style.pointerEvents='none';
@@ -291,7 +291,7 @@ function show(i){const R=window.SVR||[];if(!R.length)return;cur=(i+R.length)%R.l
  document.getElementById('hmTitle').innerHTML=`${dayLong(r.d)}<span class="s">${wc(r.code)[0]} ${wc(r.code)[1]} · ${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')} · 🌧 ${f(md(r.rn),1)} mm (${rng(r.rn,1)}) · ${r.pr.length?mx(r.pr).toFixed(0)+'%':'—'} · 💨 ${rng(r.wi,0)} km/h, gusts ${rng(r.gu,0)} · Confidence: ${r.conf}</span>`;
  const b=document.getElementById('hmBody');
  if(!H||!H.length){b.innerHTML='<p>Hourly data is not available for this day (Open-Meteo hourly request failed or the day is outside the hourly range). Press Refresh to try again.</p>';}
- else b.innerHTML=chart(H)+`<div class="scroll"><table><tr><th>Hour</th><th>Weather</th><th>Temp °C</th><th>Feels</th><th>Rain mm</th><th>Prob.</th><th>Wind km/h</th><th class="hide-m">Hum.</th><th>Cloud<span class="sp show-m">💧hum.</span></th></tr>${H.map(x=>{const[,tx0]=wc(x.code);const tx=x.day===0&&(x.code===0||x.code===1)?(x.code?'Mainly clear (night)':'Clear (night)'):tx0;return`<tr class="${x.day===0?'nt':''}"><td><b>${x.H}</b></td><td class="l" title="${tx}"><span class="wic">${wIcon(x.code,x.day)}<span class="hide-m">${tx}</span></span></td><td><b>${f(md(x.t),0)}°</b><span class="sp">${rng(x.t,0,'°')}</span></td><td>${f(x.fl,0)}°</td><td>${f(md(x.r),1)}<span class="sp">${rng(x.r,1)}</span></td><td>${num(x.p)?f(x.p,0)+'%':'—'}</td><td>${f(x.w,0)} <span class="muted">(${f(x.gu,0)})</span> ${dir(x.dir)}</td><td class="hide-m">${num(x.rh)?f(x.rh,0)+'%':'—'}</td><td>${num(x.cc)?f(x.cc,0)+'%':'—'}<span class="sp show-m">💧${num(x.rh)?f(x.rh,0)+'%':'—'}</span></td></tr>`}).join('')}</table></div><p class="muted">Median of Open-Meteo models (${MODELS.map(m=>MNAME[m]).join(', ')}); small grey text = model min–max. Wind: speed (gusts) direction. Times GMT-03. Icon = that hour's weather code (best match), with moon icons when Open-Meteo marks the hour as night (is_day).</p>`;
+ else b.innerHTML=chart(H)+`<div class="scroll"><table><tr><th>Hour</th><th>Weather</th><th>Temp °C</th><th>Feels</th><th>Rain mm</th><th>Prob.</th><th>Wind km/h</th><th class="hide-m">Hum.</th><th>Cloud<span class="sp show-m">💧hum.</span></th></tr>${H.map(x=>{const[,tx0]=wc(x.code);const tx=x.day===0&&(x.code===0||x.code===1)?(x.code?'Mainly clear':'Clear'):tx0;return`<tr class="${x.day===0?'nt':''}"><td><b>${x.H}</b></td><td class="l" title="${tx}"><span class="wic">${wIcon(x.code,x.day)}<span class="hide-m">${tx}</span></span></td><td><b>${f(md(x.t),0)}°</b><span class="sp">${rng(x.t,0,'°')}</span></td><td>${f(x.fl,0)}°</td><td>${f(md(x.r),1)}<span class="sp">${rng(x.r,1)}</span></td><td>${num(x.p)?f(x.p,0)+'%':'—'}</td><td>${f(x.w,0)} <span class="muted">(${f(x.gu,0)})</span> ${dir(x.dir)}</td><td class="hide-m">${num(x.rh)?f(x.rh,0)+'%':'—'}</td><td>${num(x.cc)?f(x.cc,0)+'%':'—'}<span class="sp show-m">💧${num(x.rh)?f(x.rh,0)+'%':'—'}</span></td></tr>`}).join('')}</table></div><p class="muted">Median of Open-Meteo models (${MODELS.map(m=>MNAME[m]).join(', ')}); small grey text = model min–max. Wind: speed (gusts) direction. Times GMT-03. Icon = that hour's weather code (best match), with moon icons when Open-Meteo marks the hour as night (is_day).</p>`;
  bg.classList.add('on');document.body.style.overflow='hidden';b.scrollTop=0;document.getElementById('hmX').focus()}
 function close(){bg.classList.remove('on');document.body.style.overflow=''}
 window.svOpenHourly=show;
