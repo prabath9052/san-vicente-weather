@@ -47,7 +47,14 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 .wic{display:inline-flex;align-items:center;gap:6px}.wi{width:26px;height:26px;flex:none;display:block}.hm-b tr.nt td{background:#f2f4fa}
 @media(max-width:600px){.wi{width:22px;height:22px}}.hm-chart{height:auto!important;max-height:210px}.hm-dots{display:flex;gap:4px;align-items:center;padding:6px 10px;background:#eef3f7;border-bottom:1px solid #dde5ec;overflow-x:auto;font-size:.75rem}.hm-dots span{padding:3px 8px;border-radius:10px;background:#fff;color:#24577a;cursor:pointer;white-space:nowrap;border:1px solid #cfdbe5}.hm-dots span.on{background:#24577a;color:#fff;border-color:#24577a;font-weight:700}.hm-hint{margin-left:auto;color:#789;font-style:normal;white-space:nowrap;padding-left:6px}@media(min-width:601px){.hm-hint{display:none}}.hm-b{touch-action:pan-y;will-change:transform}
 .card .when{color:#24577a;font-weight:600}.rtog{display:inline-flex;margin:0 0 8px;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px #0002}.rtog button{border-radius:0;background:#fff;color:#24577a;padding:10px 22px;font-size:1rem;min-height:44px;min-width:120px}.rtog button small{font-weight:400;opacity:.8}@media(max-width:600px){.rtog{display:flex}.rtog button{flex:1;min-width:0;padding:12px 8px}}.rtog button.on{background:#24577a;color:#fff}.exth{font-size:.95rem;margin:14px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}#cards2 .card{opacity:.93;border-top:3px solid #f6c9c9}
-[hidden]{display:none!important}.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.lang{display:flex;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px #0003}.lang button{border-radius:0;background:#ffffffd9;color:#24577a;padding:6px 12px;font-size:.85rem;min-height:34px}.lang button.on{background:#f2b632;color:#1d2a35}
+[hidden]{display:none!important}.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+#refresh{display:inline-flex;align-items:center;gap:8px;background:#f2b632;color:#1d2a35;font-weight:800;font-size:1.05rem;padding:11px 22px;min-height:46px;border-radius:10px;box-shadow:0 2px 6px #0004,inset 0 -2px 0 #0002;transition:transform .08s,filter .15s,box-shadow .15s;letter-spacing:.2px}
+#refresh:hover{filter:brightness(1.07);box-shadow:0 4px 10px #0005,inset 0 -2px 0 #0002}#refresh:active{transform:translateY(1px) scale(.98);box-shadow:0 1px 3px #0004}
+#refresh:focus-visible{outline:3px solid #fff;outline-offset:2px}#refresh .ri{font-size:1.3rem;line-height:1;display:inline-block}#refresh.busy .ri{animation:svspin .9s linear infinite}#refresh:disabled{cursor:progress;opacity:.9}
+@keyframes svspin{to{transform:rotate(360deg)}}
+.lang{display:inline-flex;border-radius:999px;overflow:hidden;border:1px solid #ffffff80;background:#ffffff1f}
+.lang button{border-radius:0;background:transparent;color:#fff;padding:4px 10px;font-size:.72rem;font-weight:600;min-height:28px;min-width:58px}.lang button.on{background:#fff;color:#24577a}.lang button:not(.on):hover{background:#ffffff2e}
+@media(max-width:600px){#refresh{font-size:1rem;padding:10px 16px;min-height:44px}.lang button{min-height:32px;padding:4px 12px}}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
@@ -68,7 +75,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 </g>
 </svg><div><h1>San Vicente Weather</h1><span class="sub">San Alberto · Córdoba</span>
 <small>-31.85, -65.43 · Times in ART (UTC-3) · Last updated: <span id="upd">—</span></small></div></div>
-<div class="hdr-r"><button id="refresh">Refresh</button><div class="lang" role="group" aria-label="Language / Idioma"><button data-l="en">English</button><button data-l="es">Español</button></div></div></header>
+<div class="hdr-r"><button id="refresh" title="Refresh"><span class="ri" aria-hidden="true">↻</span><span>Refresh</span></button><div class="lang" role="group" aria-label="Language / Idioma"><button data-l="en">English</button><button data-l="es">Español</button></div></div></header>
 <main>
 <div class="status" id="status"></div>
 <div class="rtog" role="group" aria-label="Forecast length"><button data-n="7" class="on">7 days</button><button data-n="14">Extended <small>(days 8–14)</small></button></div><div class="cards" id="cards"></div><div id="ext" hidden><h3 class="exth" style="margin-top:0">Days 8–14 <span class="tag Low">Extended outlook – low confidence</span></h3><div class="cards" id="cards2"></div><p class="muted">Days 8–9: ECMWF, GFS, GEM, best match (+ MET Norway where it covers the whole day). Days 10–14: ECMWF, GFS and best match only (ICON ends after day 7, GEM after day 9); ECMWF ensemble to day 14. Rain timing is not shown, models are 3–6-hourly this far out.</p></div>
@@ -194,7 +201,7 @@ async function getJSON(url,ms=20000){const c=new AbortController();const t=setTi
 const localDate=iso=>new Date(new Date(iso).getTime()-3*3600e3).toISOString().slice(0,10);
 const localHour=iso=>new Date(new Date(iso).getTime()-3*3600e3).getUTCHours();
 
-async function loadAll(){
+async function loadAll(){$('refresh').classList.add('busy');$('refresh').disabled=true;
  const st={};const S=(k,ok,msg)=>{st[k]=[ok,msg];renderStatus(st)};
  ['Open-Meteo models','Open-Meteo hourly','ECMWF ensemble','MET Norway','wttr.in'].forEach(k=>S(k,null,'loading'));
  const base=`latitude=${LAT}&longitude=${LON}&timezone=${TZE}&forecast_days=14&wind_speed_unit=kmh`;
@@ -207,7 +214,7 @@ async function loadAll(){
  ];
  const [om,hr,en,mn,wt]=await Promise.all(p);
  window.SV_LAST=[om,hr,en,mn,wt];try{process(om,hr,en,mn,wt)}catch(e){console.error(e);$('summary').textContent='Processing error: '+e.message}
- window.SV_UPD=new Date();$('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
+ window.SV_UPD=new Date();$('refresh').classList.remove('busy');$('refresh').disabled=false;$('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
 }
 function renderStatus(st){$('status').innerHTML=Object.entries(st).map(([k,[ok,m]])=>`<span class="pill ${ok===null?'wait':ok?'ok':'bad'}">${ok===null?'⏳':ok?'✔':'✖'} ${k}: ${m}</span>`).join('')}
 
