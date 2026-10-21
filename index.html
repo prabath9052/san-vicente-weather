@@ -47,7 +47,8 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 .wic{display:inline-flex;align-items:center;gap:6px}.wi{width:26px;height:26px;flex:none;display:block}.hm-b tr.nt td{background:#f2f4fa}
 @media(max-width:600px){.wi{width:22px;height:22px}}.hm-chart{height:auto!important;max-height:210px}.hm-dots{display:flex;gap:4px;align-items:center;padding:6px 10px;background:#eef3f7;border-bottom:1px solid #dde5ec;overflow-x:auto;font-size:.75rem}.hm-dots span{padding:3px 8px;border-radius:10px;background:#fff;color:#24577a;cursor:pointer;white-space:nowrap;border:1px solid #cfdbe5}.hm-dots span.on{background:#24577a;color:#fff;border-color:#24577a;font-weight:700}.hm-hint{margin-left:auto;color:#789;font-style:normal;white-space:nowrap;padding-left:6px}@media(min-width:601px){.hm-hint{display:none}}.hm-b{touch-action:pan-y;will-change:transform}
 .card .when{color:#24577a;font-weight:600}.rtog{display:inline-flex;margin:0 0 8px;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px #0002}.rtog button{border-radius:0;background:#fff;color:#24577a;padding:10px 22px;font-size:1rem;min-height:44px;min-width:120px}.rtog button small{font-weight:400;opacity:.8}@media(max-width:600px){.rtog{display:flex}.rtog button{flex:1;min-width:0;padding:12px 8px}}.rtog button.on{background:#24577a;color:#fff}.exth{font-size:.95rem;margin:14px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}#cards2 .card{opacity:.93;border-top:3px solid #f6c9c9}
-[hidden]{display:none!important}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+[hidden]{display:none!important}.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.lang{display:flex;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px #0003}.lang button{border-radius:0;background:#ffffffd9;color:#24577a;padding:6px 12px;font-size:.85rem;min-height:34px}.lang button.on{background:#f2b632;color:#1d2a35}
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <header><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
@@ -67,7 +68,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 </g>
 </svg><div><h1>San Vicente Weather</h1><span class="sub">San Alberto · Córdoba</span>
 <small>-31.85, -65.43 · Times in ART (UTC-3) · Last updated: <span id="upd">—</span></small></div></div>
-<button id="refresh">Refresh</button></header>
+<div class="hdr-r"><button id="refresh">Refresh</button><div class="lang" role="group" aria-label="Language / Idioma"><button data-l="en">English</button><button data-l="es">Español</button></div></div></header>
 <main>
 <div class="status" id="status"></div>
 <div class="rtog" role="group" aria-label="Forecast length"><button data-n="7" class="on">7 days</button><button data-n="14">Extended <small>(days 8–14)</small></button></div><div class="cards" id="cards"></div><div id="ext" hidden><h3 class="exth" style="margin-top:0">Days 8–14 <span class="tag Low">Extended outlook – low confidence</span></h3><div class="cards" id="cards2"></div><p class="muted">Days 8–9: ECMWF, GFS, GEM, best match (+ MET Norway where it covers the whole day). Days 10–14: ECMWF, GFS and best match only (ICON ends after day 7, GEM after day 9); ECMWF ensemble to day 14. Rain timing is not shown, models are 3–6-hourly this far out.</p></div>
@@ -83,6 +84,83 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 </main>
 <div class="hm-bg" id="hmBg" role="dialog" aria-modal="true" aria-labelledby="hmTitle"><div class="hm"><div class="hm-h"><button id="hmPrev" aria-label="Previous">‹</button><h3 id="hmTitle"></h3><button id="hmNext" aria-label="Next day">›</button><button id="hmX" aria-label="Close">✕</button></div><div class="hm-dots" id="hmDots"></div><div class="hm-b" id="hmBody"></div></div></div>
 
+<script>
+window.SV_LANG=localStorage.getItem('svLang')==='es'?'es':'en';
+function svLoc(){return SV_LANG==='es'?'es-AR':'en-GB'}
+const SV_ES=[
+// long notes
+["Days 8–9: ECMWF, GFS, GEM, best match (+ MET Norway where it covers the whole day). Days 10–14: ECMWF, GFS and best match only (ICON ends after day 7, GEM after day 9); ECMWF ensemble to day 14. Rain timing is not shown, models are 3–6-hourly this far out.","Días 8–9: ECMWF, GFS, GEM, best match (+ MET Norway cuando cubre el día completo). Días 10–14: solo ECMWF, GFS y best match (ICON termina después del día 7 y GEM después del día 9); ensamble ECMWF hasta el día 14. No se muestra el horario de la lluvia: a esta distancia los modelos son cada 3–6 horas."],
+["Median of Open-Meteo models (ECMWF, GFS, ICON, GEM, Best match); small grey text = model min–max. Rain: each hour is the mean of the models, scaled so the 24 hours add up to the day card's median total; 'max' = wettest model that hour, 'n/5 models' = how many models give ≥0.1 mm. Wind: speed (gusts) direction. Times GMT-03. Icon/label follow the values shown: rain icon only when the hour shows ≥0.1 mm and ≥2 models agree (thunder if ≥2 models give thunderstorm codes; intensity by mm/h), fog if most models say fog, otherwise by median cloud cover (<20% clear, 20–50 mainly clear, 50–85 partly cloudy, >85 overcast); moon at night.","Mediana de los modelos de Open-Meteo (ECMWF, GFS, ICON, GEM, Best match); texto gris = mín–máx de los modelos. Lluvia: cada hora es el promedio de los modelos, escalado para que las 24 horas sumen el total mediano de la tarjeta del día; 'máx' = el modelo más lluvioso en esa hora, 'n/5 modelos' = cuántos modelos dan ≥0,1 mm. Viento: velocidad (ráfagas) dirección. Horarios GMT-03. El ícono y la descripción siguen los valores mostrados: ícono de lluvia solo si la hora tiene ≥0,1 mm y coinciden ≥2 modelos (tormenta si ≥2 modelos indican tormenta; intensidad según mm/h), niebla si la mayoría de los modelos indica niebla y, si no, según la nubosidad mediana (<20 % despejado, 20–50 mayormente despejado, 50–85 parcialmente nublado, >85 nublado); luna de noche."],
+["Overlay: median of Open-Meteo models (ECMWF, GFS, ICON, GEM, best match) on a 0.75° grid (~1,050 points) — hourly precipitation (mm in the hour ending at the time shown; model-mean timing scaled to the daily median total, so hours add up to the day) or daily total (median). Grid is pre-computed every 3 h by a GitHub Action (falls back to a slower direct Open-Meteo daily fetch if the file is missing or stale). The San Vicente label shows the app's own forecast: the same scaled hourly mm as the hourly popup, or the 7-day summary value for day totals.","Capa: mediana de los modelos de Open-Meteo (ECMWF, GFS, ICON, GEM, best match) en una grilla de 0,75° (~1.050 puntos) — precipitación por hora (mm en la hora que termina en el horario indicado; horario según el promedio de los modelos, escalado al total diario mediano, para que las horas sumen el día) o total diario (mediana). La grilla se calcula cada 3 h con una GitHub Action (si el archivo falta o está desactualizado, se descarga directamente de Open-Meteo, más lento y solo totales diarios). La etiqueta de San Vicente muestra el pronóstico de la app: los mismos mm por hora escalados que la ventana por hora, o el valor del resumen de 7 días para los totales diarios."],
+["Spray window = hour with wind <10 km/h, gusts <20 km/h and 0 mm rain (Open-Meteo best_match hourly, 06:00–20:00). Field-work dry day = all sources ≤1 mm and rain chance <30%.","Ventana de pulverización = hora con viento <10 km/h, ráfagas <20 km/h y 0 mm de lluvia (Open-Meteo best_match por hora, 06:00–20:00). Día seco para trabajo de campo = todas las fuentes ≤1 mm y probabilidad de lluvia <30 %."],
+["Sources: Open-Meteo (ECMWF, GFS, ICON, GEM, best match + ECMWF 51-member ensemble), MET Norway/Yr, wttr.in. Values are never invented; “—” = no data.","Fuentes: Open-Meteo (ECMWF, GFS, ICON, GEM, best match + ensamble ECMWF de 51 miembros), MET Norway/Yr, wttr.in. Nunca se inventan valores; “—” = sin datos."],
+["Hourly data is not available for this day (Open-Meteo hourly request failed or the day is outside the hourly range). Press Refresh to try again.","No hay datos por hora para este día (falló la consulta horaria de Open-Meteo o el día está fuera del rango). Tocá Actualizar para reintentar."],
+["No forecast data could be loaded. Check your internet connection and press Refresh.","No se pudo cargar el pronóstico. Revisá la conexión a internet y tocá Actualizar."],
+["Map file unavailable — loading daily grid from Open-Meteo…","Archivo del mapa no disponible — cargando la grilla diaria desde Open-Meteo…"],
+["Hourly map file unavailable — showing daily totals from Open-Meteo.","Archivo horario del mapa no disponible — se muestran totales diarios de Open-Meteo."],
+["Precipitation map data could not be loaded","No se pudieron cargar los datos del mapa de precipitación"],
+["Press Refresh or try again later.","Tocá Actualizar o probá más tarde."],
+["Open-Meteo busy (rate limit) — retrying…","Open-Meteo está saturado (límite de consultas) — reintentando…"],
+["Showing older map data (updated","Mostrando datos del mapa más viejos (actualizados hace"],
+["models are 3–6-hourly this far out, hourly values are approximate","a esta distancia los modelos son cada 3–6 horas; los valores por hora son aproximados"],
+// summary sentences
+["Little or no rain expected all week (7-day total about","Poca o nada de lluvia prevista en la semana (total de 7 días: unos"],
+["No strongly windy days expected (median gusts below 45 km/h).","No se esperan días muy ventosos (ráfagas medianas por debajo de 45 km/h)."],
+["Windy days (gusts ≥45 km/h):","Días ventosos (ráfagas ≥45 km/h):"],
+["Frost risk (some model ≤2 °C):","Riesgo de helada (algún modelo ≤2 °C):"],
+["No frost risk this week.","Sin riesgo de helada esta semana."],
+["No fully dry days with high confidence.","No hay días completamente secos con confianza alta."],
+["— models disagree.","— los modelos no coinciden."],
+["Lower confidence on","Menor confianza el"],
+["Total 7-day rain about","Lluvia total en 7 días: unos"],
+["(median of sources)","(mediana de las fuentes)"],
+[", ensemble high-end",", extremo alto del ensamble"],
+["expected (median","previstos (mediana"],
+["with highs around","con máximas de alrededor de"],
+["Warmest day:","Día más caluroso:"],["Coldest night:","Noche más fría:"],[", lows near",", mínimas cercanas a"],["Wettest day:","Día más lluvioso:"],
+["Dry days:","Días secos:"],["Processing error:","Error de procesamiento:"],
+// UI
+["Extended outlook – low confidence","Pronóstico extendido – confianza baja"],["Extended outlook","Pronóstico extendido"],["Extended","Extendido"],
+["(days 8–14)","(días 8–14)"],["Days 8–14","Días 8–14"],["7 days","7 días"],["7-day summary","Resumen de 7 días"],
+["Precipitation map — hourly & daily (mm)","Mapa de precipitación — por hora y diaria (mm)"],
+["Basemap © Esri (World Shaded Relief), boundaries & labels © Esri. Map: Leaflet.","Mapa base © Esri (World Shaded Relief), límites y nombres © Esri. Mapa: Leaflet."],
+["Times in ART (UTC-3)","Horarios en ART (UTC-3)"],["Last updated:","Última actualización:"],
+["Map data updated","Datos del mapa actualizados el"],["just now (browser)","recién (navegador)"],
+["Loading precipitation grid…","Cargando grilla de precipitación…"],["Loading…","Cargando…"],
+["Per-model detail table","Tabla detallada por modelo"],["Best spraying windows","Mejores ventanas de pulverización"],["Field-work dry days:","Días secos para trabajo de campo:"],["none confirmed","ninguno confirmado"],["no suitable hours","sin horas aptas"],["Farm notes","Notas para el campo"],
+["Tap for hourly","Tocá para ver por hora"],["Show hourly forecast","Ver pronóstico por hora"],["‹ swipe ›","‹ deslizá ›"],
+["Switch between hourly and daily total","Cambiar entre por hora y total diario"],["Day total","Total diario"],["Hourly","Por hora"],["Hour of day","Hora del día"],["Forecast length","Duración del pronóstico"],
+["Previous day","Día anterior"],["Next day","Día siguiente"],["Previous","Anterior"],["Next","Siguiente"],["Close","Cerrar"],["Play","Reproducir"],["Zoom in","Acercar"],["Zoom out","Alejar"],["A JavaScript library for interactive maps","Una biblioteca de JavaScript para mapas interactivos"],
+["rain mm/h (expected, sums to the day total)","lluvia mm/h (esperada, suma el total del día)"],["dashed = wettest model that hour","punteado = modelo más lluvioso en esa hora"],["wettest model","modelo más lluvioso"],["no rain expected this day","no se espera lluvia este día"],["Hourly rain (mm/h)","Lluvia por hora (mm/h)"],
+["Hourly total","Total por hora"],["day total 00–24 GMT-03","total del día 00–24 GMT-03"],["no data","sin datos"],
+["Ens. rain median","Lluvia ens.: mediana"],["Ens. gust median","Ráfagas ens.: mediana"],["Median","Mediana"],["sources","fuentes"],["models","modelos"],["high","alta"],
+["Confidence:","Confianza:"],["High","Alta"],["Medium","Media"],["Low","Baja"],["Frost risk","Riesgo de helada"],
+["Temp °C","Temp. °C"],["Feels","Sensación"],["Rain mm","Lluvia mm"],["Rain %","Lluvia %"],["Prob.","Prob."],["Wind km/h","Viento km/h"],["Gust km/h","Ráfaga km/h"],["Hum.","Hum."],["Cloud","Nubes"],["hum.","hum."],["Weather","Tiempo"],["Hour","Hora"],["Source","Fuente"],["Var","Var."],["Dir","Dir."],["Max °C","Máx. °C"],["Min °C","Mín. °C"],["mm/day","mm/día"],
+["Gusts","Ráfagas"],["gusts","ráfagas"],["max","máx"],["Refresh","Actualizar"],
+["Open-Meteo models","Open-Meteo modelos"],["Open-Meteo hourly","Open-Meteo por hora"],["ECMWF ensemble","Ensamble ECMWF"],["OK (3 days)","OK (3 días)"],["unavailable","no disponible"],["loading","cargando"],
+// weather labels
+["Thunderstorm, hail","Tormenta con granizo"],["Thunderstorm","Tormenta"],["Heavy snow showers","Nevadas fuertes"],["Snow showers","Chaparrones de nieve"],["Violent showers","Chaparrones fuertes"],["Light showers","Chaparrones débiles"],["Showers","Chaparrones"],["Snow grains","Granos de nieve"],["Heavy snow","Nevada fuerte"],["Light snow","Nevada débil"],["Snow","Nieve"],["Freezing rain","Lluvia helada"],["Heavy rain","Lluvia fuerte"],["Light rain","Lluvia débil"],["Rain","Lluvia"],["Freezing drizzle","Llovizna helada"],["Dense drizzle","Llovizna intensa"],["Light drizzle","Llovizna débil"],["Drizzle","Llovizna"],["Rime fog","Niebla con escarcha"],["Fog","Niebla"],["Overcast","Nublado"],["Partly cloudy","Parcialmente nublado"],["Mainly clear","Mayormente despejado"],["Clear","Despejado"],
+["Labels","Nombres"],["with","con"],["of","de"],["SW","SO"],["NW","NO"],["W","O"],["San Vicente Weather","Clima San Vicente"]
+];
+const SV_MAP=new Map(SV_ES);const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const SV_LT=/[A-Za-zÀ-ÿ]/;const SV_RE=new RegExp(SV_ES.map(x=>x[0]).sort((a,b)=>b.length-a.length).map(k=>(SV_LT.test(k[0])?'(?<![A-Za-zÀ-ÿ])':'')+esc(k)+(SV_LT.test(k[k.length-1])?'(?![A-Za-zÀ-ÿ])':'')).join('|'),'g');
+function t(s){if(SV_LANG!=='es'||!s)return s;return s.replace(SV_RE,m=>SV_MAP.get(m)).replace(/(\d)\.(\d)/g,'$1,$2')}
+window.t=t;
+const ORIG=new WeakMap(),LAST=new WeakMap(),AT=['title','aria-label'];
+function trNode(n){if(n.nodeType===3){const p=n.parentElement;if(!p||p.closest('script,style'))return;if(!ORIG.has(n)||LAST.get(n)!==n.nodeValue)ORIG.set(n,n.nodeValue);const v=t(ORIG.get(n));if(v!==n.nodeValue)n.nodeValue=v;LAST.set(n,n.nodeValue);return}
+ if(n.nodeType!==1||n.matches('script,style'))return;for(const a of AT){if(!n.hasAttribute(a))continue;const k='_o_'+a,cur=n.getAttribute(a);if(n[k+'s']!==cur)n[k]=cur;const v=t(n[k]);n.setAttribute(a,v);n[k+'s']=v}
+ for(const c of n.childNodes)trNode(c)}
+let busy=false;const obs=new MutationObserver(ms=>{if(busy)return;busy=true;for(const m of ms){if(m.type==='characterData')trNode(m.target);else if(m.type==='attributes')trNode(m.target);else m.addedNodes.forEach(trNode)}obs.takeRecords();busy=false});
+function svSetLang(l){SV_LANG=l==='es'?'es':'en';localStorage.setItem('svLang',SV_LANG);document.documentElement.lang=SV_LANG==='es'?'es-AR':'en';
+ document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===SV_LANG));
+ if(!ORIG.has(document))ORIG.set(document,document.title);document.title=t(ORIG.get(document));
+ busy=true;trNode(document.body);busy=false;
+ try{if(window.SV_LAST)process(...SV_LAST)}catch(e){console.error(e)}
+ try{window.pmRelabel&&pmRelabel()}catch(e){}try{window.svHourlyRefresh&&svHourlyRefresh()}catch(e){}
+ if(window.SV_UPD)document.getElementById('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART'}
+window.svSetLang=svSetLang;
+document.addEventListener('DOMContentLoaded',()=>{obs.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:AT});document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>svSetLang(b.dataset.l));svSetLang(SV_LANG)});
+</script>
 <script>
 const LAT=-31.8506,LON=-65.4294,TZ='America/Argentina/Cordoba',TZE=encodeURIComponent(TZ);
 const MODELS=['ecmwf_ifs025','gfs_seamless','icon_seamless','gem_seamless','best_match'];
@@ -110,8 +188,8 @@ function wIcon(c,day){day=day!==0&&day!==false;const s=x=>`<svg class="wi" viewB
  if(c===0)return s(day?SVI.sun:SVI.moon);if(c<=2)return s((day?SVI.sunS:SVI.moonS)+SVI.cloud);if(c===3)return s(SVI.cloud.replace('#fff','#dde3e8'));
  if(c===45||c===48)return s(SVI.fog);if(c>=51&&c<=57)return s(SVI.dark+SVI.drip);if(c>=71&&c<=77||c===85||c===86)return s(SVI.dark+SVI.snow);
  if(c>=95)return s(SVI.dark+SVI.bolt);if(c>=61&&c<=82)return s(SVI.dark+SVI.drops);return'❔'}
-const dayName=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-const dayLong=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
+const dayName=s=>new Date(s+'T12:00:00').toLocaleDateString(svLoc(),{weekday:'short',day:'numeric',month:'short'});
+const dayLong=s=>new Date(s+'T12:00:00').toLocaleDateString(svLoc(),{weekday:'long',day:'numeric',month:'short'});
 async function getJSON(url,ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}finally{clearTimeout(t)}}
 const localDate=iso=>new Date(new Date(iso).getTime()-3*3600e3).toISOString().slice(0,10);
 const localHour=iso=>new Date(new Date(iso).getTime()-3*3600e3).getUTCHours();
@@ -128,8 +206,8 @@ async function loadAll(){
   getJSON(`https://wttr.in/${LAT},${LON}?format=j1`).then(d=>{S('wttr.in',true,'OK (3 days)');return d},e=>{S('wttr.in',false,'unavailable ('+e.message+')');return null})
  ];
  const [om,hr,en,mn,wt]=await Promise.all(p);
- try{process(om,hr,en,mn,wt)}catch(e){console.error(e);$('summary').textContent='Processing error: '+e.message}
- $('upd').textContent=new Date().toLocaleString('en-GB',{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
+ window.SV_LAST=[om,hr,en,mn,wt];try{process(om,hr,en,mn,wt)}catch(e){console.error(e);$('summary').textContent='Processing error: '+e.message}
+ window.SV_UPD=new Date();$('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
 }
 function renderStatus(st){$('status').innerHTML=Object.entries(st).map(([k,[ok,m]])=>`<span class="pill ${ok===null?'wait':ok?'ok':'bad'}">${ok===null?'⏳':ok?'✔':'✖'} ${k}: ${m}</span>`).join('')}
 
@@ -245,7 +323,7 @@ function render(){
    const ef=Math.min(1,px/(W*.06),(W-px)/(W*.06),py/(H*.06),(H-py)/(H*.06));im.data[o]=c[0];im.data[o+1]=c[1];im.data[o+2]=c[2];im.data[o+3]=(v<th()[2]?150:185)*ef}}
  cx.putImageData(im,0,0);
  ov=L.imageOverlay(cv.toDataURL(),[[B.s,B.w],[B.n,B.e]],{opacity:.9,interactive:false}).addTo(map);label()}
-const dn=s=>new Date(s+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'});
+const dn=s=>new Date(s+'T12:00:00').toLocaleDateString(svLoc(),{weekday:'short',day:'numeric'});
 const HH=h=>String(h).padStart(2,'0')+':00';
 function svHour(d,h){const R=window.svRainHours?.(d);return R?R.v[h]??null:null}
 function label(){const d=days[cur];if(!d)return;let t;
@@ -266,13 +344,13 @@ $m('pmPlay').onclick=()=>{if(timer)return stop();$m('pmPlay').textContent='❚�
 $m('pmPrev').onclick=()=>{stop();step(-1)};$m('pmNext').onclick=()=>{stop();step(1)};
 $m('pmHr').oninput=e=>{stop();hr=+e.target.value;render()};
 $m('pmMode').onclick=()=>{stop();mode=mode==='hour'?'day':'hour';legend();render()};
-window.pmOnData=()=>{if(days.length)label()};
+window.pmOnData=()=>{if(days.length)label()};window.pmRelabel=()=>{if(days.length){bar();legend();label()}};
 const T0=performance.now();legend();
 loadGrid().then(g=>{grid=g;days=(g.days||[]).slice(0,7);if(!days.length)throw new Error('no data');if(!g.hourly)mode='day';legend();
  const now=new Date(Date.now()-3*3600e3),today=now.toISOString().slice(0,10);cur=Math.max(0,days.indexOf(today));hr=now.getUTCHours();bar();render();
  msg(g.staleNote?`Showing older map data (updated ${Math.round(g.age)} h ago).`:g.src==='browser'?'Hourly map file unavailable — showing daily totals from Open-Meteo.':'');
  if(g.staleNote||g.src==='browser')setTimeout(()=>msg(''),8000);
- const gen=g.generated?new Date(g.generated).toLocaleString('en-GB',{timeZone:TZ,dateStyle:'short',timeStyle:'short'})+' GMT-03':'just now (browser)';
+ const gen=g.generated?new Date(g.generated).toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'short',timeStyle:'short'})+' GMT-03':'just now (browser)';
  $m('pmSrc').textContent=`Map data updated ${gen}.`;window.SVMAP_MS=Math.round(performance.now()-T0);window.SVMAP_READY=true})
  .catch(e=>{msg('Precipitation map data could not be loaded ('+e.message+'). Press Refresh or try again later.',true);window.SVMAP_READY='error'});
 })();
@@ -302,12 +380,13 @@ function deriveCode(x){const rv=x.rv||0,codes=(x.codes||[]).filter(num),n=x.rn||
  const thunder=codes.filter(c=>c>=95).length,fog=codes.filter(c=>c===45||c===48).length,snow=codes.filter(c=>c>=71&&c<=77||c===85||c===86).length,show=codes.filter(c=>c>=80&&c<=82).length;
  if(rv>=0.1&&n>=2){if(thunder>=2)return 95;if(snow>codes.length/2)return rv>=1?73:71;if(rv>=4)return show>=2?82:65;if(rv>=1)return show>=2?81:63;return show>=2?80:61}
  if(fog>codes.length/2)return 45;const cc=x.cc;if(!num(cc))return x.code0??3;return cc<20?0:cc<=50?1:cc<=85?2:3}
+function svWhenRange(P,a,b){if(SV_LANG!=='es')return a===b?P[a][0]:P[a][0]+' to '+P[b][0];const N=['la madrugada','temprano a la mañana','la mañana','el mediodía','la tarde','el anochecer','la noche'],S1=['de madrugada','temprano a la mañana','por la mañana','al mediodía','por la tarde','al anochecer','por la noche'];return a===b?S1[a]:'desde '+N[a]+' hasta '+N[b]}
 window.svRainWhen=function(d){if((window.SVR||[]).findIndex(x=>x.d===d)>=7)return'';const H=hours(d);if(!H)return'';const P=[['overnight',0,5],['early morning',5,8],['morning',8,12],['midday',12,14],['afternoon',14,18],['evening',18,21],['night',21,24]];
- const wet=H.map((x,i)=>({h:+x.H.slice(0,2),v:x.rv||0,ok:(x.rv||0)>=0.1&&(x.rn||0)>=2})).filter(x=>x.ok);let weak=false;if(!wet.length){weak=true;H.forEach(x=>{if((x.rv||0)>=0.03)wet.push({h:+x.H.slice(0,2),v:x.rv})})}if(!wet.length)return'brief, scattered';
- const on=P.map(([,a,b])=>wet.some(x=>x.h>=a&&x.h<b));const pk=wet.reduce((a,b)=>b.v>a.v?b:a);const peak=wet.length>1?` (heaviest ~${String(pk.h).padStart(2,'0')}:00)`:'';
- if(on.filter(Boolean).length>=5)return'on and off all day'+(weak?'':peak);
+ const wet=H.map((x,i)=>({h:+x.H.slice(0,2),v:x.rv||0,ok:(x.rv||0)>=0.1&&(x.rn||0)>=2})).filter(x=>x.ok);let weak=false;if(!wet.length){weak=true;H.forEach(x=>{if((x.rv||0)>=0.03)wet.push({h:+x.H.slice(0,2),v:x.rv})})}if(!wet.length)return(SV_LANG==='es'?'breve y aislada':'brief, scattered');
+ const on=P.map(([,a,b])=>wet.some(x=>x.h>=a&&x.h<b));const pk=wet.reduce((a,b)=>b.v>a.v?b:a);const peak=wet.length>1?` (${SV_LANG==='es'?'más intensa':'heaviest'} ~${String(pk.h).padStart(2,'0')}:00)`:'';
+ if(on.filter(Boolean).length>=5)return(SV_LANG==='es'?'intermitente todo el día':'on and off all day')+(weak?'':peak);
  const g=[];on.forEach((o,i)=>{if(!o)return;const l=g[g.length-1];if(l&&l[1]===i-1)l[1]=i;else g.push([i,i])});
- return(weak?'mostly ':'')+g.map(([a,b])=>a===b?P[a][0]:P[a][0]+' to '+P[b][0]).join(' & ')+(weak?'':peak)};
+ return(weak?(SV_LANG==='es'?'mayormente ':'mostly '):'')+g.map(([a,b])=>svWhenRange(P,a,b)).join(SV_LANG==='es'?' y ':' & ')+(weak?'':peak)};
 window.svDayCode=function(r){const H=hours(r.d);if(!H||!H.length)return r.code;const rain=r.rn.length?pct(r.rn,.5):0,wet=r.rn.filter(v=>v>=0.1).length;
  if(rain>=0.1&&wet>=2){if(H.some(x=>x.code>=95))return 95;if(rain>=15)return 65;if(rain>=5)return 63;if(rain>=1)return 61;return 80}
  const D=H.filter(x=>x.day!==0);const dd=D.length?D:H;if(dd.filter(x=>x.code===45).length>dd.length/2)return 45;
@@ -323,14 +402,14 @@ function chart(H){const W=innerWidth<600?380:600,Ht=160,pl=34,pr=8,pt=22,pb=20,i
 function show(i){const R=window.SVR||[];if(!R.length)return;{const ex=localStorage.getItem('svRange')==='14'&&R.length>7,lo=ex?7:0,n=ex?R.length-7:Math.min(7,R.length);cur=lo+(((i-lo)%n)+n)%n}const r=R[cur];const H=hours(r.d);
  const mx=a=>a.length?Math.max(...a):null;
  document.getElementById('hmTitle').innerHTML=`${dayLong(r.d)}<span class="s">${wc(r.code)[0]} ${wc(r.code)[1]}${r.code>=51?(w=>w?" · "+w:"")(window.svRainWhen(r.d)):""} · ${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')} · 🌧 Hourly total ${H&&H.RH?fr(H.RH.sum):'—'} mm (models ${rng(r.rn,1)}) · ${r.pr.length?mx(r.pr).toFixed(0)+'%':'—'} · 💨 ${rng(r.wi,0)} km/h, gusts ${rng(r.gu,0)} · Confidence: ${r.conf}</span>`;
- document.getElementById('hmDots').innerHTML=R.map((x,k)=>((k<7)!==(cur<7))?'':`<span class="${k===cur?'on':''}" data-k="${k}">${new Date(x.d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})}</span>`).join('')+'<em class="hm-hint">‹ swipe ›</em>';
+ document.getElementById('hmDots').innerHTML=R.map((x,k)=>((k<7)!==(cur<7))?'':`<span class="${k===cur?'on':''}" data-k="${k}">${new Date(x.d+'T12:00:00').toLocaleDateString(svLoc(),{weekday:'short'})}</span>`).join('')+'<em class="hm-hint">‹ swipe ›</em>';
  if(cur>=7)document.getElementById('hmTitle').querySelector('.s').insertAdjacentHTML('beforeend',' · <b>Extended outlook</b>: models are 3–6-hourly this far out, hourly values are approximate');
  const b=document.getElementById('hmBody');
  if(!H||!H.length){b.innerHTML='<p>Hourly data is not available for this day (Open-Meteo hourly request failed or the day is outside the hourly range). Press Refresh to try again.</p>';}
  else b.innerHTML=chart(H)+`<div class="scroll"><table><tr><th>Hour</th><th>Weather</th><th>Temp °C</th><th>Feels</th><th>Rain mm</th><th>Prob.</th><th>Wind km/h</th><th class="hide-m">Hum.</th><th>Cloud<span class="sp show-m">💧hum.</span></th></tr>${H.map(x=>{const[,tx0]=wc(x.code);const tx=x.day===0&&(x.code===0||x.code===1)?(x.code?'Mainly clear':'Clear'):tx0;return`<tr class="${x.day===0?'nt':''}"><td><b>${x.H}</b></td><td class="l" title="${tx}"><span class="wic">${wIcon(x.code,x.day)}<span class="hide-m">${tx}</span></span></td><td><b>${f(md(x.t),0)}°</b><span class="sp">${rng(x.t,0,'°')}</span></td><td>${f(x.fl,0)}°</td><td>${fr(x.rv)}<span class="sp">${x.rmax>0?'max '+fr(x.rmax)+(x.rn?` · ${x.rn}/${x.rnm} models`:''):''}</span></td><td>${num(x.p)?f(x.p,0)+'%':'—'}</td><td>${f(x.w,0)} <span class="muted">(${f(x.gu,0)})</span> ${dir(x.dir)}</td><td class="hide-m">${num(x.rh)?f(x.rh,0)+'%':'—'}</td><td>${num(x.cc)?f(x.cc,0)+'%':'—'}<span class="sp show-m">💧${num(x.rh)?f(x.rh,0)+'%':'—'}</span></td></tr>`}).join('')}</table></div><p class="muted">Median of Open-Meteo models (${MODELS.map(m=>MNAME[m]).join(', ')}); small grey text = model min–max. Rain: each hour is the mean of the models, scaled so the 24 hours add up to the day card's median total${H.RH?.orphan?' (only MET Norway/wttr.in show rain this day, so hours are 0)':''}; 'max' = wettest model that hour, 'n/5 models' = how many models give ≥0.1 mm. Wind: speed (gusts) direction. Times GMT-03. Icon/label follow the values shown: rain icon only when the hour shows ≥0.1 mm and ≥2 models agree (thunder if ≥2 models give thunderstorm codes; intensity by mm/h), fog if most models say fog, otherwise by median cloud cover (&lt;20% clear, 20–50 mainly clear, 50–85 partly cloudy, &gt;85 overcast); moon at night.</p>`;
  bg.classList.add('on');document.body.style.overflow='hidden';b.scrollTop=0;document.getElementById('hmX').focus()}
 function close(){bg.classList.remove('on');document.body.style.overflow=''}
-window.svOpenHourly=show;window.svHours=hours;window.svHourlyStep=d=>show(cur+d);window.svHourlyClose=close;document.getElementById('hmDots').addEventListener('click',e=>{const k=e.target.dataset?.k;if(k!=null)show(+k)});
+window.svOpenHourly=show;window.svHourlyRefresh=()=>{if(bg.classList.contains('on'))show(cur)};window.svHours=hours;window.svHourlyStep=d=>show(cur+d);window.svHourlyClose=close;document.getElementById('hmDots').addEventListener('click',e=>{const k=e.target.dataset?.k;if(k!=null)show(+k)});
 document.getElementById('hmX').onclick=close;document.getElementById('hmPrev').onclick=()=>window.svHourlySlide?svHourlySlide(-1):show(cur-1);document.getElementById('hmNext').onclick=()=>window.svHourlySlide?svHourlySlide(1):show(cur+1);
 bg.addEventListener('click',e=>{if(e.target===bg)close()});
 document.addEventListener('keydown',e=>{if(!bg.classList.contains('on'))return;if(e.key==='Escape')close();if(e.key==='ArrowLeft')show(cur-1);if(e.key==='ArrowRight')show(cur+1)});
