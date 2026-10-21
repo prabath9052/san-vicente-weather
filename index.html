@@ -46,7 +46,8 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 .pm-bar #pmMode{font-size:.75rem;font-weight:700;border-left:1px solid #ffffff2a;white-space:nowrap}.pm-bar #pmMode[aria-pressed=true]{background:#f2b632;color:#1d2a35}.pm-bar #pmMode:disabled{opacity:.4}
 .wic{display:inline-flex;align-items:center;gap:6px}.wi{width:26px;height:26px;flex:none;display:block}.hm-b tr.nt td{background:#f2f4fa}
 @media(max-width:600px){.wi{width:22px;height:22px}}.hm-chart{height:auto!important;max-height:210px}.hm-dots{display:flex;gap:4px;align-items:center;padding:6px 10px;background:#eef3f7;border-bottom:1px solid #dde5ec;overflow-x:auto;font-size:.75rem}.hm-dots span{padding:3px 8px;border-radius:10px;background:#fff;color:#24577a;cursor:pointer;white-space:nowrap;border:1px solid #cfdbe5}.hm-dots span.on{background:#24577a;color:#fff;border-color:#24577a;font-weight:700}.hm-hint{margin-left:auto;color:#789;font-style:normal;white-space:nowrap;padding-left:6px}@media(min-width:601px){.hm-hint{display:none}}.hm-b{touch-action:pan-y;will-change:transform}
-.card .when{color:#24577a;font-weight:600}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+.card .when{color:#24577a;font-weight:600}.rtog{display:inline-flex;margin:0 0 8px;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px #0002}.rtog button{border-radius:0;background:#fff;color:#24577a;padding:10px 22px;font-size:1rem;min-height:44px;min-width:120px}.rtog button small{font-weight:400;opacity:.8}@media(max-width:600px){.rtog{display:flex}.rtog button{flex:1;min-width:0;padding:12px 8px}}.rtog button.on{background:#24577a;color:#fff}.exth{font-size:.95rem;margin:14px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}#cards2 .card{opacity:.93;border-top:3px solid #f6c9c9}
+[hidden]{display:none!important}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <header><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
@@ -69,7 +70,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 <button id="refresh">Refresh</button></header>
 <main>
 <div class="status" id="status"></div>
-<div class="cards" id="cards"></div>
+<div class="rtog" role="group" aria-label="Forecast length"><button data-n="7" class="on">7 days</button><button data-n="14">Extended <small>(days 8–14)</small></button></div><div class="cards" id="cards"></div><div id="ext" hidden><h3 class="exth" style="margin-top:0">Days 8–14 <span class="tag Low">Extended outlook – low confidence</span></h3><div class="cards" id="cards2"></div><p class="muted">Days 8–9: ECMWF, GFS, GEM, best match (+ MET Norway where it covers the whole day). Days 10–14: ECMWF, GFS and best match only (ICON ends after day 7, GEM after day 9); ECMWF ensemble to day 14. Rain timing is not shown, models are 3–6-hourly this far out.</p></div>
 <section class="box"><h2>7-day summary</h2><p id="summary">Loading…</p></section>
 <section class="box" id="mapbox"><h2>Precipitation map — hourly &amp; daily (mm)</h2>
 <div id="pmap"><div class="pm-msg" id="pmMsg">Loading precipitation grid…</div><div class="pm-time" id="pmTime"></div><div class="pm-legend" id="pmLegend"></div>
@@ -118,7 +119,7 @@ const localHour=iso=>new Date(new Date(iso).getTime()-3*3600e3).getUTCHours();
 async function loadAll(){
  const st={};const S=(k,ok,msg)=>{st[k]=[ok,msg];renderStatus(st)};
  ['Open-Meteo models','Open-Meteo hourly','ECMWF ensemble','MET Norway','wttr.in'].forEach(k=>S(k,null,'loading'));
- const base=`latitude=${LAT}&longitude=${LON}&timezone=${TZE}&forecast_days=7&wind_speed_unit=kmh`;
+ const base=`latitude=${LAT}&longitude=${LON}&timezone=${TZE}&forecast_days=14&wind_speed_unit=kmh`;
  const p=[
   getJSON(`https://api.open-meteo.com/v1/forecast?${base}&daily=${DV.join(',')}&models=${MODELS.join(',')}`).then(d=>{S('Open-Meteo models',true,'OK');return d},e=>{S('Open-Meteo models',false,e.message);return null}),
   getJSON(`https://api.open-meteo.com/v1/forecast?${base}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,cloud_cover,weather_code,is_day&models=${MODELS.join(',')}`).then(d=>{S('Open-Meteo hourly',true,'OK');return d},e=>{S('Open-Meteo hourly',false,e.message);return null}),
@@ -136,7 +137,7 @@ function process(om,hr,en,mn,wt){
  if(hr?.hourly){window.SV_HR=hr;for(const k of ['wind_speed_10m','wind_gusts_10m','precipitation','precipitation_probability'])if(!hr.hourly[k])hr.hourly[k]=hr.hourly[k+'_best_match']}
  let days=om?.daily?.time||hr?.hourly?.time&&[...new Set(hr.hourly.time.map(t=>t.slice(0,10)))]||[];
  if(!days.length){const t=new Date(Date.now()-3*3600e3);for(let i=0;i<7;i++)days.push(new Date(t.getTime()+i*864e5).toISOString().slice(0,10))}
- days=days.slice(0,7);
+ days=days.slice(0,14);
  // per-source daily rows: src -> date -> {tmax,tmin,rain,prob,wind,gust,dir,code}
  const D={};
  if(om?.daily)for(const m of MODELS){D[m]={};om.daily.time.forEach((t,i)=>{const g=v=>om.daily[`${v}_${m}`]?.[i];D[m][t]={tmax:g('temperature_2m_max'),tmin:g('temperature_2m_min'),rain:g('precipitation_sum'),prob:g('precipitation_probability_max'),wind:g('wind_speed_10m_max'),gust:g('wind_gusts_10m_max'),dir:g('wind_direction_10m_dominant'),code:g('weather_code')}})}
@@ -152,17 +153,19 @@ function process(om,hr,en,mn,wt){
  const E={};if(en?.daily){en.daily.time.forEach((t,i)=>{const r=[],g=[];for(const k in en.daily){if(k.startsWith('precipitation_sum'))r.push(en.daily[k][i]);if(k.startsWith('wind_gusts_10m_max'))g.push(en.daily[k][i])}E[t]={n:r.filter(num).length,rMed:pct(r,.5),rHi:pct(r,.9),gMed:pct(g,.5),gHi:pct(g,.9)}})}
  // spray windows
  const SW={};if(hr?.hourly){const h=hr.hourly;h.time.forEach((t,i)=>{const d=t.slice(0,10),H=+t.slice(11,13);if(H<6||H>20)return;SW[d]=SW[d]||{hours:[],n:0};SW[d].n++;if(num(h.wind_speed_10m[i])&&h.wind_speed_10m[i]<10&&num(h.wind_gusts_10m[i])&&h.wind_gusts_10m[i]<20&&num(h.precipitation[i])&&h.precipitation[i]===0)SW[d].hours.push(H)})}
- const R=days.map(d=>{const v=k=>srcs.map(s=>D[s][d]?.[k]).filter(num);const tx=v('tmax'),tn=v('tmin'),rn=v('rain'),pr=v('prob'),wi=v('wind'),gu=v('gust');
+ let R=days.map(d=>{const v=k=>srcs.map(s=>D[s][d]?.[k]).filter(num);const tx=v('tmax'),tn=v('tmin'),rn=v('rain'),pr=v('prob'),wi=v('wind'),gu=v('gust');
   const bm=D.best_match?.[d]||{};const spread=tx.length>1?Math.max(Math.max(...tx)-Math.min(...tx),Math.max(...tn)-Math.min(...tn)):null;const rs=rn.length>1?Math.max(...rn)-Math.min(...rn):0;
   let conf='—';if(spread!==null){conf=spread<=3&&rs<=5?'High':spread<=6&&rs<=15?'Medium':'Low'}
   return{d,tx,tn,rn,pr,wi,gu,code:bm.code??D.ecmwf_ifs025?.[d]?.code,dir:bm.dir??D.ecmwf_ifs025?.[d]?.dir,frost:tn.some(x=>x<=2),conf,E:E[d],SW:SW[d]}});
- window.SVR=R;R.forEach(r=>{r.code0=r.code;if(window.svDayCode)r.code=svDayCode(r)});$('cards').innerHTML=R.map((r,ci)=>{const[ic,tx]=wc(r.code);const e=r.E;return`<div class="card clk" data-i="${ci}" tabindex="0" role="button" title="Show hourly forecast"><h3>${dayName(r.d)}</h3><div class="icon" title="${tx}">${ic}</div><div class="muted">${tx}${r.code>=51&&window.svRainWhen?(w=>w?` · <span class="when">${w}</span>`:"")(svRainWhen(r.d)):""}</div>
+ const RA=R;window.SVR=RA;RA.forEach((r,ri)=>{if(ri>=7)r.conf="Low";r.code0=r.code;if(window.svDayCode)r.code=svDayCode(r)});$('cards').innerHTML=RA.map((r,ci)=>{const[ic,tx]=wc(r.code);const e=r.E;return`<div class="card clk" data-i="${ci}" tabindex="0" role="button" title="Show hourly forecast"><h3>${dayName(r.d)}</h3><div class="icon" title="${tx}">${ic}</div><div class="muted">${tx}${r.code>=51&&window.svRainWhen?(w=>w?` · <span class="when">${w}</span>`:"")(svRainWhen(r.d)):""}</div>
  <div class="t">${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')}</div>
- <div>🌧 ${rng(r.rn,1,' mm')} · ${r.pr.length?Math.max(...r.pr).toFixed(0)+'%':'—'}</div>
+ <div>🌧 ${rng(r.rn,1,' mm')} · ${r.pr.length?Math.max(...r.pr).toFixed(0)+'%':'—'}</div>${ci>=7?`<div class="muted">Median ${f(pct(r.rn,.5),1)} mm · ${r.rn.length} sources</div>`:''}
  ${e?`<div class="muted">Ens. rain median ${f(e.rMed,1)} / high ${f(e.rHi,1)} mm</div>`:''}
  <div>💨 ${rng(r.wi,0)} km/h ${dir(r.dir)}</div><div>Gusts ${rng(r.gu,0,' km/h')}</div>
  ${e?`<div class="muted">Ens. gust median ${f(e.gMed,0)} / high ${f(e.gHi,0)}</div>`:''}
  ${r.frost?'<span class="tag frost">❄ Frost risk</span>':''}<span class="tag ${r.conf}">Confidence: ${r.conf}</span><span class="cue">🕒 Tap for hourly ›</span></div>`}).join('');
+ {const c2=$('cards2'),cs=[...$('cards').children];c2.innerHTML='';cs.slice(7).forEach(n=>c2.appendChild(n));$('ext').dataset.has=cs.length>7?'1':'';svSetRange()}
+ R=RA.slice(0,7);days=days.slice(0,7);
  // summary
  const has=R.filter(r=>r.tx.length);let s=[];
  if(!has.length)s.push('No forecast data could be loaded. Check your internet connection and press Refresh.');else{
@@ -176,7 +179,7 @@ function process(om,hr,en,mn,wt){
   const dry=R.filter(r=>r.rn.length&&Math.max(...r.rn)<=1&&(!r.pr.length||Math.max(...r.pr)<30));s.push(dry.length?`Dry days: ${dry.length} of ${R.length} (${dry.map(r=>dayName(r.d)).join(', ')}).`:'No fully dry days with high confidence.');
   const lo=R.filter(r=>r.conf==='Low');if(lo.length)s.push(`Lower confidence on ${lo.map(r=>dayName(r.d)).join(', ')} — models disagree.`)}
  $('summary').textContent=s.join(' ');
- window.SVR=R;if(window.pmOnData)pmOnData();
+ window.SVR=RA;if(window.pmOnData)pmOnData();
  // farm
  const grp=h=>{const o=[];h.forEach(x=>{const l=o[o.length-1];if(l&&l[1]===x-1)l[1]=x;else o.push([x,x])});return o.map(([a,b])=>`${String(a).padStart(2,'0')}:00–${String(b+1).padStart(2,'0')}:00`).join(', ')};
  const dry=R.filter(r=>r.rn.length&&Math.max(...r.rn)<=1&&(!r.pr.length||Math.max(...r.pr)<30));
@@ -299,7 +302,7 @@ function deriveCode(x){const rv=x.rv||0,codes=(x.codes||[]).filter(num),n=x.rn||
  const thunder=codes.filter(c=>c>=95).length,fog=codes.filter(c=>c===45||c===48).length,snow=codes.filter(c=>c>=71&&c<=77||c===85||c===86).length,show=codes.filter(c=>c>=80&&c<=82).length;
  if(rv>=0.1&&n>=2){if(thunder>=2)return 95;if(snow>codes.length/2)return rv>=1?73:71;if(rv>=4)return show>=2?82:65;if(rv>=1)return show>=2?81:63;return show>=2?80:61}
  if(fog>codes.length/2)return 45;const cc=x.cc;if(!num(cc))return x.code0??3;return cc<20?0:cc<=50?1:cc<=85?2:3}
-window.svRainWhen=function(d){const H=hours(d);if(!H)return'';const P=[['overnight',0,5],['early morning',5,8],['morning',8,12],['midday',12,14],['afternoon',14,18],['evening',18,21],['night',21,24]];
+window.svRainWhen=function(d){if((window.SVR||[]).findIndex(x=>x.d===d)>=7)return'';const H=hours(d);if(!H)return'';const P=[['overnight',0,5],['early morning',5,8],['morning',8,12],['midday',12,14],['afternoon',14,18],['evening',18,21],['night',21,24]];
  const wet=H.map((x,i)=>({h:+x.H.slice(0,2),v:x.rv||0,ok:(x.rv||0)>=0.1&&(x.rn||0)>=2})).filter(x=>x.ok);let weak=false;if(!wet.length){weak=true;H.forEach(x=>{if((x.rv||0)>=0.03)wet.push({h:+x.H.slice(0,2),v:x.rv})})}if(!wet.length)return'brief, scattered';
  const on=P.map(([,a,b])=>wet.some(x=>x.h>=a&&x.h<b));const pk=wet.reduce((a,b)=>b.v>a.v?b:a);const peak=wet.length>1?` (heaviest ~${String(pk.h).padStart(2,'0')}:00)`:'';
  if(on.filter(Boolean).length>=5)return'on and off all day'+(weak?'':peak);
@@ -317,10 +320,11 @@ function chart(H){const W=innerWidth<600?380:600,Ht=160,pl=34,pr=8,pt=22,pb=20,i
  const ghost=MX.map((v,i)=>v>0?`<rect x="${X(i)-bw/2}" y="${Y(v)}" width="${bw}" height="${ih*v/rmax}" fill="none" stroke="#4192ea" stroke-dasharray="2 2" opacity=".7"><title>${H[i].H} wettest model ${v.toFixed(1)} mm/h</title></rect>`:'').join('');const bars=R.map((v,i)=>v>0?`<rect x="${X(i)-bw/2}" y="${Y(v)}" width="${bw}" height="${ih*v/rmax}" fill="#4192ea"><title>${H[i].H} ${fr(v)} mm/h</title></rect>${v>=0.05?`<text x="${X(i)}" y="${Y(v)-2}" font-size="9" text-anchor="middle" fill="#24577a">${fr(v)}</text>`:''}`:'').join('');
  const ax=H.map((h,i)=>i%3===0?`<text x="${X(i)}" y="${Ht-5}" font-size="10" text-anchor="middle" fill="#667">${h.H.slice(0,2)}</text>`:'').join('');
  return`<svg class="hm-chart" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Hourly rain (mm/h)">${grid}${ghost}<text x="2" y="9" font-size="10" fill="#24577a" font-weight="700">mm/h</text>${bars}${ax}</svg><div class="muted" style="margin:-2px 0 6px"><span style="color:#4192ea">▮</span> rain mm/h (expected, sums to the day total) &nbsp;<span style="color:#4192ea">┆</span> dashed = wettest model that hour${Math.max(...MX)<0.05?' — no rain expected this day':''}</div>`}
-function show(i){const R=window.SVR||[];if(!R.length)return;cur=(i+R.length)%R.length;const r=R[cur];const H=hours(r.d);
+function show(i){const R=window.SVR||[];if(!R.length)return;{const ex=localStorage.getItem('svRange')==='14'&&R.length>7,lo=ex?7:0,n=ex?R.length-7:Math.min(7,R.length);cur=lo+(((i-lo)%n)+n)%n}const r=R[cur];const H=hours(r.d);
  const mx=a=>a.length?Math.max(...a):null;
  document.getElementById('hmTitle').innerHTML=`${dayLong(r.d)}<span class="s">${wc(r.code)[0]} ${wc(r.code)[1]}${r.code>=51?(w=>w?" · "+w:"")(window.svRainWhen(r.d)):""} · ${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')} · 🌧 Hourly total ${H&&H.RH?fr(H.RH.sum):'—'} mm (models ${rng(r.rn,1)}) · ${r.pr.length?mx(r.pr).toFixed(0)+'%':'—'} · 💨 ${rng(r.wi,0)} km/h, gusts ${rng(r.gu,0)} · Confidence: ${r.conf}</span>`;
- document.getElementById('hmDots').innerHTML=R.map((x,k)=>`<span class="${k===cur?'on':''}" data-k="${k}">${new Date(x.d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})}</span>`).join('')+'<em class="hm-hint">‹ swipe ›</em>';
+ document.getElementById('hmDots').innerHTML=R.map((x,k)=>((k<7)!==(cur<7))?'':`<span class="${k===cur?'on':''}" data-k="${k}">${new Date(x.d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})}</span>`).join('')+'<em class="hm-hint">‹ swipe ›</em>';
+ if(cur>=7)document.getElementById('hmTitle').querySelector('.s').insertAdjacentHTML('beforeend',' · <b>Extended outlook</b>: models are 3–6-hourly this far out, hourly values are approximate');
  const b=document.getElementById('hmBody');
  if(!H||!H.length){b.innerHTML='<p>Hourly data is not available for this day (Open-Meteo hourly request failed or the day is outside the hourly range). Press Refresh to try again.</p>';}
  else b.innerHTML=chart(H)+`<div class="scroll"><table><tr><th>Hour</th><th>Weather</th><th>Temp °C</th><th>Feels</th><th>Rain mm</th><th>Prob.</th><th>Wind km/h</th><th class="hide-m">Hum.</th><th>Cloud<span class="sp show-m">💧hum.</span></th></tr>${H.map(x=>{const[,tx0]=wc(x.code);const tx=x.day===0&&(x.code===0||x.code===1)?(x.code?'Mainly clear':'Clear'):tx0;return`<tr class="${x.day===0?'nt':''}"><td><b>${x.H}</b></td><td class="l" title="${tx}"><span class="wic">${wIcon(x.code,x.day)}<span class="hide-m">${tx}</span></span></td><td><b>${f(md(x.t),0)}°</b><span class="sp">${rng(x.t,0,'°')}</span></td><td>${f(x.fl,0)}°</td><td>${fr(x.rv)}<span class="sp">${x.rmax>0?'max '+fr(x.rmax)+(x.rn?` · ${x.rn}/${x.rnm} models`:''):''}</span></td><td>${num(x.p)?f(x.p,0)+'%':'—'}</td><td>${f(x.w,0)} <span class="muted">(${f(x.gu,0)})</span> ${dir(x.dir)}</td><td class="hide-m">${num(x.rh)?f(x.rh,0)+'%':'—'}</td><td>${num(x.cc)?f(x.cc,0)+'%':'—'}<span class="sp show-m">💧${num(x.rh)?f(x.rh,0)+'%':'—'}</span></td></tr>`}).join('')}</table></div><p class="muted">Median of Open-Meteo models (${MODELS.map(m=>MNAME[m]).join(', ')}); small grey text = model min–max. Rain: each hour is the mean of the models, scaled so the 24 hours add up to the day card's median total${H.RH?.orphan?' (only MET Norway/wttr.in show rain this day, so hours are 0)':''}; 'max' = wettest model that hour, 'n/5 models' = how many models give ≥0.1 mm. Wind: speed (gusts) direction. Times GMT-03. Icon/label follow the values shown: rain icon only when the hour shows ≥0.1 mm and ≥2 models agree (thunder if ≥2 models give thunderstorm codes; intensity by mm/h), fog if most models say fog, otherwise by median cloud cover (&lt;20% clear, 20–50 mainly clear, 50–85 partly cloudy, &gt;85 overcast); moon at night.</p>`;
@@ -356,4 +360,9 @@ b.addEventListener('touchend',()=>{if(ax==='x'){if(Math.abs(dx)>Math.min(90,W()*
  ax=null},{passive:true});
 })();
 </script>
-</body></html>
+<script>
+function svSetRange(n){if(n)localStorage.setItem('svRange',n);n=+(n||localStorage.getItem('svRange')||7);const e=document.getElementById('ext');const ex=n===14&&!!e.dataset.has;e.hidden=!ex;document.getElementById('cards').hidden=ex;document.querySelectorAll('.rtog button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n))}
+document.querySelectorAll('.rtog button').forEach(b=>b.onclick=()=>svSetRange(b.dataset.n));svSetRange();
+document.getElementById('cards2').addEventListener('click',e=>{const c=e.target.closest('.card[data-i]');if(c)svOpenHourly(+c.dataset.i)});
+document.getElementById('cards2').addEventListener('keydown',e=>{const c=e.target.closest('.card[data-i]');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();svOpenHourly(+c.dataset.i)}});
+</script></body></html>
