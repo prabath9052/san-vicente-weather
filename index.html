@@ -564,7 +564,7 @@ document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',
 body.addEventListener('pointermove',tip);body.addEventListener('pointerdown',tip);body.addEventListener('pointerleave',()=>body.querySelectorAll('.sg-tt').forEach(x=>x.hidden=true));window.svStationGraphs=open;load();document.getElementById('refresh').addEventListener('click',load);setInterval(load,5*60e3)})();
 </script>
 <script>
-function svAnchorDay(bg,doScroll){const tg=document.querySelector('.rtog'),now=document.getElementById('now');if(!tg)return;
+function svAnchorDay(bg,doScroll){if(innerWidth<=600){bg.classList.remove('anch');bg.style.top='';const h0=bg.querySelector('.hm');if(h0){h0.style.left='';h0.style.width=''}return}const tg=document.querySelector('.rtog'),now=document.getElementById('now');if(!tg)return;
 const cs=[document.getElementById('cards'),document.getElementById('ext')].find(e=>e&&!e.hidden&&e.offsetHeight)||tg.parentElement;
 if(doScroll&&innerWidth>600){const y=scrollY,tt=tg.getBoundingClientRect().top+y;let t=(now&&!now.hidden?now.getBoundingClientRect().top+y:tt)-8;if(tt-t>innerHeight-340)t=tt-(innerHeight-340);window.scrollTo({top:Math.max(0,t),behavior:'instant'})}
 else if(doScroll){const y=scrollY,tt=tg.getBoundingClientRect().top+y;if(tg.getBoundingClientRect().top>innerHeight*.45||tg.getBoundingClientRect().top<0)window.scrollTo({top:Math.max(0,tt-innerHeight*.3),behavior:'instant'})}
