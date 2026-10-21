@@ -14,10 +14,10 @@ def get(path):
     return json.load(urllib.request.urlopen(r, timeout=60))
 now = dt.datetime.now(TZ)
 midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-end = int(time.time() * 1000); start = min(int(midnight.timestamp() * 1000), end - 24 * 3600000)
+end = int(time.time() * 1000); start = min(int(midnight.timestamp() * 1000), end - 7 * 24 * 3600000)
 series = {}
 path = f"/data?deviceSerialNumber={DEV}&startTime={start}&endTime={end}"
-for _ in range(20):
+for _ in range(200):
     d = get(path)
     for s in d.get("sensors", []):
         for blk in s.get("data", []):
@@ -61,6 +61,37 @@ out = {
   "soilWater": r1(soil, 3) if soil is not None and 0 <= soil <= 0.6 else None,
 }
 os.makedirs("data", exist_ok=True)
+# ---- compact series for the "today's graphs" popup -> data/station-series.json
+SER = {"t": ("20530638-1", "avg", 1), "st": ("20496238-1", "avg", 1), "rh": ("20530638-2", "avg", 0),
+       "dp": ("20530638-3", "avg", 1), "w": ("21796781-1", "avg", 1), "g": ("21796781-2", "max", 1),
+       "wd": ("21796781-3", "vec", 0), "r": ("10704900-1", "sum", 1), "lw": ("20851391-1", "avg", 0),
+       "sr": ("20530536-1", "avg", 0)}
+import math
+def bucket(t0, step, n):
+    v = {}
+    for k, (sn, how, nd) in SER.items():
+        b = [[] for _ in range(n)]
+        for ts_, x in series.get(sn, []):
+            i = int((ts_ - 1 - t0) // step)  # record stamped at interval end
+            if 0 <= i < n: b[i].append(x)
+        sc = KMH if k in ("w", "g") else 1
+        o = []
+        for a in b:
+            if not a: o.append(None); continue
+            if how == "avg": y = sum(a) / len(a) * sc
+            elif how == "max": y = max(a) * sc
+            elif how == "sum": y = sum(a); nd = 2
+            else: y = math.degrees(math.atan2(sum(math.sin(math.radians(z)) for z in a), sum(math.cos(math.radians(z)) for z in a))) % 360
+            o.append(round(y, nd) if nd else int(round(y)))
+        v[k] = o
+    return {"t0": t0, "step": step, "n": n, "v": v}
+Q = 900000; H = 3600000
+q0 = (min(int(mid_ms), d24) // Q) * Q; qn = int((end - q0) // Q) + 1
+h0 = ((end - 7 * 24 * H) // H) * H; hn = int((end - h0) // H) + 1
+ser = {"fetched": now.isoformat(timespec="seconds"), "tz": "-03:00", "midnight": int(mid_ms),
+       "q": bucket(q0, Q, qn), "h": bucket(h0, H, hn)}
+json.dump(ser, open("data/station-series.json", "w"), ensure_ascii=False, separators=(",", ":"))
+print("series:", qn, "x15min,", hn, "x1h")
 old = None
 try: old = json.load(open("data/station.json"))
 except Exception: pass
