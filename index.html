@@ -46,7 +46,7 @@ ul{margin:4px 0;padding-left:18px}.muted{color:#667;font-size:.8rem}
 .pm-bar #pmMode{font-size:.75rem;font-weight:700;border-left:1px solid #ffffff2a;white-space:nowrap}.pm-bar #pmMode[aria-pressed=true]{background:#f2b632;color:#1d2a35}.pm-bar #pmMode:disabled{opacity:.4}
 .wic{display:inline-flex;align-items:center;gap:6px}.wi{width:26px;height:26px;flex:none;display:block}.hm-b tr.nt td{background:#f2f4fa}
 @media(max-width:600px){.wi{width:22px;height:22px}}.hm-chart{height:auto!important;max-height:210px}.hm-dots{display:flex;gap:4px;align-items:center;padding:6px 10px;background:#eef3f7;border-bottom:1px solid #dde5ec;overflow-x:auto;font-size:.75rem}.hm-dots span{padding:3px 8px;border-radius:10px;background:#fff;color:#24577a;cursor:pointer;white-space:nowrap;border:1px solid #cfdbe5}.hm-dots span.on{background:#24577a;color:#fff;border-color:#24577a;font-weight:700}.hm-hint{margin-left:auto;color:#789;font-style:normal;white-space:nowrap;padding-left:6px}@media(min-width:601px){.hm-hint{display:none}}.hm-b{touch-action:pan-y;will-change:transform}
-</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+.card .when{color:#24577a;font-weight:600}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.ico"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <header><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
@@ -151,7 +151,7 @@ function process(om,hr,en,mn,wt){
   const bm=D.best_match?.[d]||{};const spread=tx.length>1?Math.max(Math.max(...tx)-Math.min(...tx),Math.max(...tn)-Math.min(...tn)):null;const rs=rn.length>1?Math.max(...rn)-Math.min(...rn):0;
   let conf='—';if(spread!==null){conf=spread<=3&&rs<=5?'High':spread<=6&&rs<=15?'Medium':'Low'}
   return{d,tx,tn,rn,pr,wi,gu,code:bm.code??D.ecmwf_ifs025?.[d]?.code,dir:bm.dir??D.ecmwf_ifs025?.[d]?.dir,frost:tn.some(x=>x<=2),conf,E:E[d],SW:SW[d]}});
- window.SVR=R;R.forEach(r=>{r.code0=r.code;if(window.svDayCode)r.code=svDayCode(r)});$('cards').innerHTML=R.map((r,ci)=>{const[ic,tx]=wc(r.code);const e=r.E;return`<div class="card clk" data-i="${ci}" tabindex="0" role="button" title="Show hourly forecast"><h3>${dayName(r.d)}</h3><div class="icon" title="${tx}">${ic}</div><div class="muted">${tx}</div>
+ window.SVR=R;R.forEach(r=>{r.code0=r.code;if(window.svDayCode)r.code=svDayCode(r)});$('cards').innerHTML=R.map((r,ci)=>{const[ic,tx]=wc(r.code);const e=r.E;return`<div class="card clk" data-i="${ci}" tabindex="0" role="button" title="Show hourly forecast"><h3>${dayName(r.d)}</h3><div class="icon" title="${tx}">${ic}</div><div class="muted">${tx}${r.code>=51&&window.svRainWhen?(w=>w?` · <span class="when">${w}</span>`:"")(svRainWhen(r.d)):""}</div>
  <div class="t">${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')}</div>
  <div>🌧 ${rng(r.rn,1,' mm')} · ${r.pr.length?Math.max(...r.pr).toFixed(0)+'%':'—'}</div>
  ${e?`<div class="muted">Ens. rain median ${f(e.rMed,1)} / high ${f(e.rHi,1)} mm</div>`:''}
@@ -294,6 +294,12 @@ function deriveCode(x){const rv=x.rv||0,codes=(x.codes||[]).filter(num),n=x.rn||
  const thunder=codes.filter(c=>c>=95).length,fog=codes.filter(c=>c===45||c===48).length,snow=codes.filter(c=>c>=71&&c<=77||c===85||c===86).length,show=codes.filter(c=>c>=80&&c<=82).length;
  if(rv>=0.1&&n>=2){if(thunder>=2)return 95;if(snow>codes.length/2)return rv>=1?73:71;if(rv>=4)return show>=2?82:65;if(rv>=1)return show>=2?81:63;return show>=2?80:61}
  if(fog>codes.length/2)return 45;const cc=x.cc;if(!num(cc))return x.code0??3;return cc<20?0:cc<=50?1:cc<=85?2:3}
+window.svRainWhen=function(d){const H=hours(d);if(!H)return'';const P=[['overnight',0,5],['early morning',5,8],['morning',8,12],['midday',12,14],['afternoon',14,18],['evening',18,21],['night',21,24]];
+ const wet=H.map((x,i)=>({h:+x.H.slice(0,2),v:x.rv||0,ok:(x.rv||0)>=0.1&&(x.rn||0)>=2})).filter(x=>x.ok);let weak=false;if(!wet.length){weak=true;H.forEach(x=>{if((x.rv||0)>=0.03)wet.push({h:+x.H.slice(0,2),v:x.rv})})}if(!wet.length)return'brief, scattered';
+ const on=P.map(([,a,b])=>wet.some(x=>x.h>=a&&x.h<b));const pk=wet.reduce((a,b)=>b.v>a.v?b:a);const peak=wet.length>1?` (heaviest ~${String(pk.h).padStart(2,'0')}:00)`:'';
+ if(on.filter(Boolean).length>=5)return'on and off all day'+(weak?'':peak);
+ const g=[];on.forEach((o,i)=>{if(!o)return;const l=g[g.length-1];if(l&&l[1]===i-1)l[1]=i;else g.push([i,i])});
+ return(weak?'mostly ':'')+g.map(([a,b])=>a===b?P[a][0]:P[a][0]+' to '+P[b][0]).join(' & ')+(weak?'':peak)};
 window.svDayCode=function(r){const H=hours(r.d);if(!H||!H.length)return r.code;const rain=r.rn.length?pct(r.rn,.5):0,wet=r.rn.filter(v=>v>=0.1).length;
  if(rain>=0.1&&wet>=2){if(H.some(x=>x.code>=95))return 95;if(rain>=15)return 65;if(rain>=5)return 63;if(rain>=1)return 61;return 80}
  const D=H.filter(x=>x.day!==0);const dd=D.length?D:H;if(dd.filter(x=>x.code===45).length>dd.length/2)return 45;
@@ -308,7 +314,7 @@ function chart(H){const W=innerWidth<600?380:600,Ht=160,pl=34,pr=8,pt=22,pb=20,i
  return`<svg class="hm-chart" viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Hourly rain (mm/h)">${grid}${ghost}<text x="2" y="9" font-size="10" fill="#24577a" font-weight="700">mm/h</text>${bars}${ax}</svg><div class="muted" style="margin:-2px 0 6px"><span style="color:#4192ea">▮</span> rain mm/h (expected, sums to the day total) &nbsp;<span style="color:#4192ea">┆</span> dashed = wettest model that hour${Math.max(...MX)<0.05?' — no rain expected this day':''}</div>`}
 function show(i){const R=window.SVR||[];if(!R.length)return;cur=(i+R.length)%R.length;const r=R[cur];const H=hours(r.d);
  const mx=a=>a.length?Math.max(...a):null;
- document.getElementById('hmTitle').innerHTML=`${dayLong(r.d)}<span class="s">${wc(r.code)[0]} ${wc(r.code)[1]} · ${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')} · 🌧 Hourly total ${H&&H.RH?fr(H.RH.sum):'—'} mm (models ${rng(r.rn,1)}) · ${r.pr.length?mx(r.pr).toFixed(0)+'%':'—'} · 💨 ${rng(r.wi,0)} km/h, gusts ${rng(r.gu,0)} · Confidence: ${r.conf}</span>`;
+ document.getElementById('hmTitle').innerHTML=`${dayLong(r.d)}<span class="s">${wc(r.code)[0]} ${wc(r.code)[1]}${r.code>=51?(w=>w?" · "+w:"")(window.svRainWhen(r.d)):""} · ${rng(r.tx,0,'°')} / ${rng(r.tn,0,'°')} · 🌧 Hourly total ${H&&H.RH?fr(H.RH.sum):'—'} mm (models ${rng(r.rn,1)}) · ${r.pr.length?mx(r.pr).toFixed(0)+'%':'—'} · 💨 ${rng(r.wi,0)} km/h, gusts ${rng(r.gu,0)} · Confidence: ${r.conf}</span>`;
  document.getElementById('hmDots').innerHTML=R.map((x,k)=>`<span class="${k===cur?'on':''}" data-k="${k}">${new Date(x.d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})}</span>`).join('')+'<em class="hm-hint">‹ swipe ›</em>';
  const b=document.getElementById('hmBody');
  if(!H||!H.length){b.innerHTML='<p>Hourly data is not available for this day (Open-Meteo hourly request failed or the day is outside the hourly range). Press Refresh to try again.</p>';}
