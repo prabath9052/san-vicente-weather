@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fetch current conditions from the LI-COR Cloud (HOBOlink) RX3000 'Fondomonte Weather'
 and write data/station.json (readings only, never the token).
-Sensor choice: air temp = 20530638-1 (same probe as RH/dew point; 20496238-1 is a second
-temperature probe that reads ~3 °C higher, likely sun-exposed/unshielded — kept as temp_alt).
+Sensor choice: air temp = 20530638-1 (same probe as RH/dew point). 20496238-1 is a SOIL
+temperature probe -> soilTemp (current) + soilTempMax/soilTempMin (today's records).
 Wind/gust/direction = 21796781 (combo anemometer with direction); 20530319 kept as alt.
 Soil water 20527026-1 only shown if 0..0.6 m3/m3."""
 import json, os, sys, time, datetime as dt, urllib.request
@@ -45,7 +45,9 @@ out = {
   "observed": dt.datetime.fromtimestamp(ts_all / 1000, TZ).isoformat() if ts_all else None,
   "fetched": now.isoformat(timespec="seconds"),
   "temp": r1(t), "tempMax": r1(max(tt)) if tt else None, "tempMin": r1(min(tt)) if tt else None,
-  "tempAlt": r1(last("20496238-1")[0]),
+  "soilTemp": r1(last("20496238-1")[0]),
+  "soilTempMax": r1(max(today("20496238-1"))) if today("20496238-1") else None,
+  "soilTempMin": r1(min(today("20496238-1"))) if today("20496238-1") else None,
   "rh": r1(last("20530638-2")[0], 0), "dewPoint": r1(last("20530638-3")[0]),
   "wind": r1((last("21796781-1")[0] or 0) * KMH) if last("21796781-1")[0] is not None else r1((last("20530319-1")[0] or 0) * KMH),
   "gust": r1(last("21796781-2")[0] * KMH) if last("21796781-2")[0] is not None else None,
