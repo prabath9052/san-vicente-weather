@@ -140,8 +140,13 @@ function process(om,hr,en,mn,wt){
  // per-source daily rows: src -> date -> {tmax,tmin,rain,prob,wind,gust,dir,code}
  const D={};
  if(om?.daily)for(const m of MODELS){D[m]={};om.daily.time.forEach((t,i)=>{const g=v=>om.daily[`${v}_${m}`]?.[i];D[m][t]={tmax:g('temperature_2m_max'),tmin:g('temperature_2m_min'),rain:g('precipitation_sum'),prob:g('precipitation_probability_max'),wind:g('wind_speed_10m_max'),gust:g('wind_gusts_10m_max'),dir:g('wind_direction_10m_dominant'),code:g('weather_code')}})}
- if(mn?.properties?.timeseries){const a={};for(const s of mn.properties.timeseries){const d=localDate(s.time),x=s.data.instant.details;a[d]=a[d]||{t:[],w:[],r:0,rn:0};a[d].t.push(x.air_temperature);if(num(x.wind_speed))a[d].w.push(x.wind_speed*3.6);const r=s.data.next_1_hours?.details?.precipitation_amount;if(num(r)){a[d].r+=r;a[d].rn++}}
-  D.metno={};for(const[d,v]of Object.entries(a)){if(v.t.length<20)continue;D.metno[d]={tmax:Math.max(...v.t),tmin:Math.min(...v.t),wind:v.w.length?Math.max(...v.w):null,rain:v.rn>=20?v.r:null}}}
+ if(mn?.properties?.timeseries){const a={};const ts=mn.properties.timeseries;const A=d=>a[d]=a[d]||{t:[],w:[],r:0,ch:0};
+  for(const s of ts){const d=localDate(s.time),x=s.data.instant.details;A(d).t.push(x.air_temperature);if(num(x.wind_speed))a[d].w.push(x.wind_speed*3.6)}
+  // rain: walk the series once; use next_1_hours where present, else next_6_hours; skip steps already covered (no double counting); split blocks across local midnights
+  let cov=-Infinity;for(const s of ts){const t=Date.parse(s.time);if(t<cov)continue;const n1=s.data.next_1_hours?.details?.precipitation_amount,n6=s.data.next_6_hours?.details?.precipitation_amount;
+   let hrs,amt;if(num(n1)){hrs=1;amt=n1}else if(num(n6)){hrs=6;amt=n6}else continue;
+   for(let k=0;k<hrs;k++){const d=localDate(new Date(t+k*36e5).toISOString());A(d).r+=amt/hrs;a[d].ch++}cov=t+hrs*36e5}
+  D.metno={};for(const[d,v]of Object.entries(a)){const full=v.t.length>=20;D.metno[d]={tmax:full?Math.max(...v.t):null,tmin:full?Math.min(...v.t):null,wind:full&&v.w.length?Math.max(...v.w):null,rain:v.ch>=23?v.r:null,rainHrs:v.ch}}}
  if(wt?.weather){D.wttr={};for(const w of wt.weather){const h=w.hourly||[];D.wttr[w.date]={tmax:+w.maxtempC,tmin:+w.mintempC,rain:h.length?h.reduce((s,x)=>s+(+x.precipMM||0),0):null,prob:h.length?Math.max(...h.map(x=>+x.chanceofrain||0)):null,wind:h.length?Math.max(...h.map(x=>+x.windspeedKmph||0)):null,gust:h.length?Math.max(...h.map(x=>+x.WindGustKmph||0)):null}}}
  const srcs=Object.keys(D);
  const E={};if(en?.daily){en.daily.time.forEach((t,i)=>{const r=[],g=[];for(const k in en.daily){if(k.startsWith('precipitation_sum'))r.push(en.daily[k][i]);if(k.startsWith('wind_gusts_10m_max'))g.push(en.daily[k][i])}E[t]={n:r.filter(num).length,rMed:pct(r,.5),rHi:pct(r,.9),gMed:pct(g,.5),gHi:pct(g,.9)}})}
