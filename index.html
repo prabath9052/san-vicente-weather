@@ -104,7 +104,7 @@ main{max-width:1180px;padding:12px 14px 24px}
 .hero-in{max-width:1180px;margin:auto;padding:14px 16px 18px;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px 16px}
 .hero .brand img{width:52px;height:52px;border-radius:50%;box-shadow:0 2px 8px #0003;background:#fff}
 .hero h1{font-size:1.3rem;margin:0;font-weight:800;letter-spacing:.2px;text-shadow:0 1px 2px #0003}.hero .sub{font-size:.85rem;opacity:.95}.hupd{display:block;font-size:.72rem;opacity:.9;margin-top:2px}
-.hero-now{display:flex;align-items:center;gap:8px;line-height:1}.hn-ic{font-size:2.6rem;filter:drop-shadow(0 2px 3px #0003)}.hn-t{font-size:3rem;font-weight:800;letter-spacing:-1px;text-shadow:0 2px 4px #0003}.hn-s{font-size:.78rem;opacity:.95;max-width:110px;line-height:1.25}
+.hero-now{display:flex;align-items:center;gap:8px;line-height:1}.hn-ic{font-size:2.6rem;filter:drop-shadow(0 2px 3px #0003)}.hn-t{font-size:3rem;font-weight:800;letter-spacing:-1px;text-shadow:0 2px 4px #0003}.hn-s{display:flex;flex-direction:column;gap:2px;font-size:.78rem;opacity:.95;line-height:1.25;white-space:nowrap;min-width:0}.hn-s>span{white-space:nowrap}.hn-w{font-size:.95rem;font-weight:700}.hn-st{opacity:.9}.hero-now{flex-wrap:nowrap}
 .hero-act{display:flex;gap:8px;align-items:center}
 .rbtn,#refresh.rbtn{width:52px;height:52px;min-height:0;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#f2b632;color:#1d2a35;box-shadow:0 3px 10px #0004;font-size:1.6rem}
 #refresh.rbtn .ri{font-size:1.7rem}
@@ -149,7 +149,7 @@ html[data-theme=dark] .chip.frost{background:#1d3654;color:#b8d6ff}html[data-the
 .more{margin-top:10px}.more summary{cursor:pointer;font-weight:700;color:var(--acc);padding:8px 0;min-height:28px}.more .nowg{margin-top:6px}
 .gbtn{margin-top:10px;background:var(--acc);color:#fff;border-radius:12px;padding:10px 16px;min-height:44px}
 @media(max-width:600px){#nowg{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px;scrollbar-width:none;overscroll-behavior-x:contain}#nowg::-webkit-scrollbar{display:none}#nowg>div{flex:0 0 46%;scroll-snap-align:start}
- .hero-in{grid-template-columns:1fr auto;padding:12px 12px 14px}.hero-now{grid-column:1;grid-row:2}.hero-act{grid-column:2;grid-row:1}.hn-t{font-size:2.6rem}.hn-ic{font-size:2.2rem}.hero h1{font-size:1.1rem}.hero .brand img{width:44px;height:44px}.rbtn,#refresh.rbtn{width:48px;height:48px}
+ .hero-in{grid-template-columns:1fr auto;padding:12px 12px 14px}.hero-now{grid-column:1;grid-row:2}.hero-act{grid-column:2;grid-row:1}.hn-t{font-size:2.6rem}.hn-ic{font-size:2.2rem}.hero-now{grid-column:1/-1;gap:10px}.hn-s{font-size:.8rem}.hero h1{font-size:1.1rem}.hero .brand img{width:44px;height:44px}.rbtn,#refresh.rbtn{width:48px;height:48px}
  .cards{grid-template-columns:1fr 1fr;gap:10px}.card{padding:10px}.card .icon{font-size:2.2rem}}
 @media(max-width:380px){.cards{grid-template-columns:1fr}}
 /* skeleton */
@@ -721,13 +721,33 @@ $('themeBtn').onclick=()=>{localStorage.setItem('svTheme',root.dataset.theme==='
 // --- ⋮ menu ---
 const kb=$('kBtn'),kp=$('kPop');kb.onclick=e=>{e.stopPropagation();kp.hidden=!kp.hidden;kb.setAttribute('aria-expanded',!kp.hidden)};
 document.addEventListener('click',e=>{if(!kp.hidden&&!kp.contains(e.target)&&e.target!==kb){kp.hidden=true;kb.setAttribute('aria-expanded','false')}});
-kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(()=>{kp.hidden=true},150)});
+kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(()=>{kp.hidden=true;hero()},150)});
 // --- hero day/night + current conditions ---
-function hero(){const H=artNow().getUTCHours();$('hero').classList.toggle('night',H<7||H>=20);const d=window.SVST;if(!d)return;
- const night=H<7||H>=20,rainNow=num(d.rainToday)&&d.rainToday>0&&num(d.wetness)&&d.wetness>=60;
- $('hnIc').textContent=rainNow?'🌧':night?'🌙':num(d.solar)?(d.solar>550?'☀️':d.solar>200?'⛅':'☁️'):'⛅';
+// sun elevation (deg) for station coords; clear-sky GHI via Haurwitz model
+const SLAT=-31.8506,SLON=-65.4294;
+function sunEl(t){const d=t/864e5+2440587.5-2451545,g=(357.529+.98560028*d)*Math.PI/180,q=280.459+.98564736*d,L=(q+1.915*Math.sin(g)+.02*Math.sin(2*g))*Math.PI/180,e=(23.439-3.6e-7*d)*Math.PI/180,
+ ra=Math.atan2(Math.cos(e)*Math.sin(L),Math.cos(L)),dec=Math.asin(Math.sin(e)*Math.sin(L)),gm=((18.697374558+24.06570982441908*d)%24+24)%24,ha=(gm*15+SLON)*Math.PI/180-ra,la=SLAT*Math.PI/180;
+ return Math.asin(Math.sin(la)*Math.sin(dec)+Math.cos(la)*Math.cos(dec)*Math.cos(ha))*180/Math.PI}
+const clearSky=el=>{const c=Math.sin(el*Math.PI/180);return c>0?1098*c*Math.exp(-.057/c):0};
+let OMC=null;function omCur(){fetch(`https://api.open-meteo.com/v1/forecast?latitude=${SLAT}&longitude=${SLON}&current=weather_code,cloud_cover,is_day&timezone=America%2FArgentina%2FCordoba`).then(r=>r.json()).then(j=>{OMC=j.current;window.SV_OMC=OMC;hero()}).catch(()=>{})}
+omCur();setInterval(omCur,15*60e3);
+const CW={clear:['Clear','Despejado'],mclear:['Mostly clear','Mayormente despejado'],partly:['Partly cloudy','Parcialmente nublado'],cloudy:['Cloudy','Nublado'],fog:['Fog','Niebla'],drizzle:['Drizzle','Llovizna'],rain:['Rain','Lluvia'],snow:['Snow','Nieve'],storm:['Thunderstorm','Tormenta']};
+const ICD={clear:'☀️',mclear:'🌤️',partly:'⛅',cloudy:'☁️',fog:'🌫️',drizzle:'🌦️',rain:'🌧️',snow:'🌨️',storm:'⛈️'},ICN={clear:'🌙',mclear:'🌙',partly:'☁️',cloudy:'☁️',fog:'🌫️',drizzle:'🌧️',rain:'🌧️',snow:'🌨️',storm:'⛈️'};
+const ccCat=c=>c<20?'clear':c<45?'mclear':c<80?'partly':'cloudy';
+window.svCond=function(d,c,now){now=now||Date.now();const el=sunEl(now),night=el<-0.833;let k=null,src='';
+ const code=c&&num(c.weather_code)?c.weather_code:null;
+ if(num(d&&d.rainToday)&&d.rainToday>0&&num(d.wetness)&&d.wetness>=60){k='rain';src='station rain'}
+ else if(code!=null&&code>=45){k=code>=95?'storm':code>=71&&code<=86&&!(code>=80&&code<=82)?'snow':code>=61?'rain':code>=51?'drizzle':'fog';src='forecast code'}
+ if(!k&&!night&&d&&num(d.solar)){const ob=d.observed?new Date(d.observed).getTime():now,se=sunEl(ob);
+  if(se>=15&&now-ob<90*60e3){const r=d.solar/clearSky(se);k=r>=.85?'clear':r>=.65?'mclear':r>=.35?'partly':'cloudy';src='station solar '+Math.round(r*100)+'% of clear-sky'}}
+ if(!k&&c&&num(c.cloud_cover)){k=ccCat(c.cloud_cover);src='forecast cloud '+c.cloud_cover+'%'}
+ if(!k&&code!=null){k=code===0?'clear':code===1?'mclear':code===2?'partly':'cloudy';src='forecast code'}
+ if(!k){k='partly';src='default'}
+ return{k,night,el,src,icon:(night?ICN:ICD)[k],word:CW[k][ES()?1:0]}};
+function hero(){const d=window.SVST,C=svCond(d,OMC);$('hero').classList.toggle('night',C.night);if(!d)return;
+ const I=$('hnIc');I.textContent=C.icon;I.title=C.word;I.dataset.src=C.src;
  const T=$('hnT');T.classList.remove('sk');T.textContent=fx(d.temp,0)+'°';
- $('hnS').innerHTML=`<span>Fondomonte station</span><br>💧 ${fx(d.rh,0)}% · 💨 ${fx(d.wind,0)} km/h`}
+ $('hnS').innerHTML=`<span class="hn-w">${C.word}</span><span class="hn-st">${ES()?'Estación Fondomonte':'Fondomonte station'}</span><span class="hn-m">💧 ${fx(d.rh,0)}% · 💨 ${fx(d.wind,0)} km/h</span>`}
 setInterval(hero,60e3);
 // --- now panel: 4 big tiles + "More readings" ---
 const MAIN=['Temperature','Wind','Rain today','Humidity'];
