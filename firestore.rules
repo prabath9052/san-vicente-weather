@@ -1,0 +1,27 @@
+// Wind-alert rules. Paste these 3 match blocks INSIDE your existing
+//   match /databases/{database}/documents { ... }
+// in Firebase console > Firestore Database > Rules, keep your existing /usernames rule, then Publish.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/usernames/prabath9052).data.authUid == request.auth.uid;
+    }
+    function isBot() { return request.auth != null && request.auth.uid == '6EG61Ugx0vb2G3AOVFPsh0XUZoh1'; }
+
+    // (existing) usernames rule stays as you have it today.
+
+    // Push subscriptions: each user writes only their own doc; the sender bot can read and prune; admin can read (device count).
+    match /pushSubs/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isBot() || isAdmin());
+      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+      allow update: if isBot() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subs','pruned']);
+    }
+    // Nominations: only the admin writes; the user can read their own; bot reads all.
+    match /alertNominees/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isBot() || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}

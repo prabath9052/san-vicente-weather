@@ -3,6 +3,13 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      force_threshold:
+        description: 'TEST: send if wind > this (km/h); state untouched'
+        required: false
+      only_uid:
+        description: 'TEST: only send to this Firebase uid'
+        required: false
 permissions:
   contents: write
 concurrency:
@@ -18,11 +25,22 @@ jobs:
         env:
           HOBOLINK_API_TOKEN: ${{ secrets.HOBOLINK_API_TOKEN }}
         run: python3 -u scripts/fetch_station.py
+      - name: Wind alert push
+        continue-on-error: true
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          FB_BOT_EMAIL: ${{ secrets.FB_BOT_EMAIL }}
+          FB_BOT_PASSWORD: ${{ secrets.FB_BOT_PASSWORD }}
+          FORCE_THRESHOLD: ${{ github.event.inputs.force_threshold }}
+          ONLY_UID: ${{ github.event.inputs.only_uid }}
+        run: |
+          pip install -q pywebpush
+          python3 -u scripts/wind_alert.py
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
-          git add data/station.json data/station-series.json
+          git add data/station.json data/station-series.json data/wind-alert-state.json
           git diff --cached --quiet && exit 0
           git commit -m "Update station conditions"
           for i in 1 2 3 4 5; do

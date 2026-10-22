@@ -168,6 +168,12 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 @media(max-width:600px){#nowg{display:grid!important;grid-template-columns:1fr 1fr!important;overflow:visible!important;scroll-snap-type:none!important;gap:8px}#nowg>*{min-width:0!important;width:auto!important;flex:none!important}#nowg .v,#nowg b{font-size:1.25rem;overflow-wrap:anywhere}}
 .chips{flex-wrap:wrap}.chip{white-space:normal!important;max-width:100%;overflow:visible}.card{overflow:visible}
 .chip{display:inline-block!important;line-height:1.35}
+</style><style id="al">.al-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.al-bg.on{display:flex}
+.al-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
+.al-box h3{margin:0 28px 8px 0;font-size:1.15rem}.al-x{position:absolute;top:10px;right:10px;border:0;background:none;font-size:1.2rem;cursor:pointer;color:inherit;width:36px;height:36px}
+.al-p{margin:0 0 12px;font-size:.92rem;opacity:.85}.al-sw{display:flex;align-items:center;gap:10px;font-weight:600;padding:10px 12px;border-radius:12px;background:#2f7fb81a;cursor:pointer}
+.al-sw input,.adm-r input{width:22px;height:22px;accent-color:#2f7fb8}.al-n{font-size:.88rem;margin:10px 0 0}.al-n.ok{color:#2a8a4a}.al-w{color:#b5531a;font-size:.88rem}.al-i{font-size:.8rem;opacity:.75;margin:10px 0 0}.al-m{font-size:.88rem;font-weight:600}
+.adm-l{display:flex;flex-direction:column;gap:6px}.adm-r{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#8881;cursor:pointer}.adm-u{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis}.adm-d{font-size:.8rem;opacity:.7;white-space:nowrap}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="https://prabath9052.github.io/san-vicente-weather/manifest.webmanifest"><link rel="icon" href="https://prabath9052.github.io/san-vicente-weather/favicon.ico"><link rel="apple-touch-icon" href="https://prabath9052.github.io/san-vicente-weather/apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
@@ -798,6 +804,56 @@ function glance(){const R=window.SVR;if(!R)return;const t=todayS(),r=R.find(x=>x
 window.addEventListener('load',()=>{decorate();hero()});
 })();
 ;(function(){var mq=matchMedia('(max-width:600px)');function mv(){var t=document.getElementById('tabs'),g=document.getElementById('glance');if(!t)return;if(mq.matches){if(t.parentNode!==document.body)document.body.appendChild(t)}else if(g&&t.nextSibling!==g){g.parentNode.insertBefore(t,g)}}if(document.readyState!='loading')mv();else document.addEventListener('DOMContentLoaded',mv);mq.addEventListener('change',mv)})();
+</script>
+<script>// ===== Wind alerts (Web Push) + admin nominations =====
+(function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',t=(e,s)=>ES()?s:e;
+const VAPID='BHOuk2l3AXoswpLinUn2QDevJSL_u0ASFPOXSenbsWVImPdfh5Ohy0bj2RW0HC6yVCsilkDwyz9ko0kXvXSaZiw',ADMIN='prabath9052';
+const SUP=('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+let U=null,UID=null,REG=null;
+const b64=s=>{s=(s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
+const ekey=e=>{let h=0;for(const c of e)h=(h*31+c.charCodeAt(0))>>>0;return 'e'+h.toString(36)+e.length};
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js',{scope:'./'}).then(r=>REG=r).catch(e=>console.warn('sw',e));
+// menu items
+const kp=$('kPop');const mk=(id,html)=>{const b=document.createElement('button');b.type='button';b.id=id;b.className='kitem';b.hidden=true;b.innerHTML=html;kp.querySelector('#themeBtn').after(b);return b};
+const bAdm=mk('admBtn','<span>👥</span> <span class="tx">Alert recipients</span>'),bAl=mk('alBtn','<span>🔔</span> <span class="tx">Wind alerts</span>');
+const modal=document.createElement('div');modal.className='al-bg';modal.id='alBg';modal.innerHTML='<div class="al-box" role="dialog" aria-modal="true"><button class="al-x" id="alX" aria-label="Close">✕</button><div id="alBody"></div></div>';document.body.appendChild(modal);
+const close=()=>modal.classList.remove('on');$('alX').onclick=close;modal.onclick=e=>{if(e.target===modal)close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+const F=()=>window.svFs,D=()=>window.svDb;
+async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return s.exists()&&s.data().wind===true}catch(e){return null}}
+async function curSub(){if(!SUP)return null;const r=REG||await navigator.serviceWorker.ready;return r.pushManager.getSubscription()}
+async function renderAl(msg){const B=$('alBody');const nom=await nominated();const sub=await curSub().catch(()=>null);const on=!!sub&&Notification.permission==='granted';
+ let st=!SUP?(IOS&&!STANDALONE?t('On iPhone/iPad, first add this app to your Home Screen (Share ▸ Add to Home Screen, iOS 16.4+), then open it from there.','En iPhone/iPad, primero agregá la app a la pantalla de inicio (Compartir ▸ Agregar a inicio, iOS 16.4+) y abrila desde ahí.'):t('This browser does not support push notifications.','Este navegador no admite notificaciones push.'))
+  :Notification.permission==='denied'?t('Notifications are blocked for this site in your browser settings.','Las notificaciones están bloqueadas para este sitio en la configuración del navegador.'):'';
+ B.innerHTML=`<h3>🔔 ${t('Wind alerts','Alertas de viento')}</h3><p class="al-p">${t('Get a phone notification when the station’s current average wind goes above 15 km/h (windy for spraying).','Recibí una notificación cuando el viento medio actual de la estación supere 15 km/h (viento para pulverizar).')}</p>
+ <label class="al-sw"><input type="checkbox" id="alTog" ${on?'checked':''} ${SUP&&Notification.permission!=='denied'?'':'disabled'}><span>${t('Alerts on this device','Alertas en este dispositivo')}</span></label>
+ <p class="al-n ${nom?'ok':''}">${nom===true?t('✓ You are on the alert list.','✓ Estás en la lista de alertas.'):nom===false?t('You are not nominated yet — the admin must add you before alerts arrive.','Todavía no estás nominado: el administrador debe agregarte para recibir alertas.'):t('Could not check the alert list.','No se pudo verificar la lista de alertas.')}</p>
+ ${st?`<p class="al-w">${st}</p>`:''}<p class="al-i">📱 ${t('iPhone: push only works after adding the app to the Home Screen (iOS 16.4 or later).','iPhone: las notificaciones solo funcionan si agregás la app a la pantalla de inicio (iOS 16.4 o posterior).')}</p>${msg?`<p class="al-m">${msg}</p>`:''}`;
+ const tg=$('alTog');if(tg)tg.onchange=()=>tg.checked?enable():disable()}
+async function save(sub,del){const ref=F().doc(D(),'pushSubs',UID),k=ekey(sub.endpoint);
+ if(del)return F().setDoc(ref,{subs:{[k]:F().deleteField()},updated:F().serverTimestamp()},{merge:true});
+ return F().setDoc(ref,{user:U,lang:window.SV_LANG||'en',updated:F().serverTimestamp(),subs:{[k]:JSON.stringify(sub.toJSON())}},{merge:true})}
+async function enable(){try{const p=await Notification.requestPermission();if(p!=='granted')return renderAl(t('Permission not granted.','Permiso no otorgado.'));
+ const r=REG||await navigator.serviceWorker.ready;let s=await r.pushManager.getSubscription();if(!s)s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID)});
+ await save(s);renderAl(t('Alerts enabled on this device.','Alertas activadas en este dispositivo.'))}catch(e){console.error(e);renderAl(t('Could not enable: ','No se pudo activar: ')+e.message)}}
+async function disable(){try{const s=await curSub();if(s){await save(s,true).catch(()=>{});await s.unsubscribe()}renderAl(t('Alerts turned off on this device.','Alertas desactivadas en este dispositivo.'))}catch(e){renderAl(e.message)}}
+async function renderAdm(msg){const B=$('alBody');B.innerHTML=`<h3>👥 ${t('Wind alert recipients','Destinatarios de alertas de viento')}</h3><p class="al-p">${t('Tick who gets wind alerts. Users must also turn alerts on in their own app.','Marcá quién recibe alertas de viento. Cada usuario también debe activarlas en su app.')}</p><div id="admL" class="adm-l">…</div>${msg?`<p class="al-m">${msg}</p>`:''}`;
+ try{const [us,ns,ps]=await Promise.all([F().getDocs(F().collection(D(),'usernames')),F().getDocs(F().collection(D(),'alertNominees')).catch(e=>{window.SVADMERR=e.message;return null}),F().getDocs(F().collection(D(),'pushSubs')).catch(()=>null)]);
+  const N={},P={};ns&&ns.forEach(d=>N[d.id]=d.data().wind===true);ps&&ps.forEach(d=>P[d.id]=Object.keys(d.data().subs||{}).length);
+  const rows=[];us.forEach(d=>{const x=d.data();if(x.authUid)rows.push({id:d.id,uid:x.authUid})});rows.sort((a,b)=>a.id.localeCompare(b.id));
+  $('admL').innerHTML=rows.map(r=>`<label class="adm-r"><input type="checkbox" data-uid="${r.uid}" data-id="${r.id}" ${N[r.uid]?'checked':''}><span class="adm-u">${r.id}</span><span class="adm-d">${P[r.uid]?'📱 '+P[r.uid]:t('no device','sin dispositivo')}</span></label>`).join('')||'—';if(!ns)$('admL').insertAdjacentHTML('beforeend',`<p class="al-w">${t('Nominations unavailable: ','Nominaciones no disponibles: ')}${window.SVADMERR||''}</p>`);
+  $('admL').querySelectorAll('input').forEach(c=>c.onchange=async()=>{c.disabled=true;try{await F().setDoc(F().doc(D(),'alertNominees',c.dataset.uid),{user:c.dataset.id,wind:c.checked,by:UID,updated:F().serverTimestamp()})}catch(e){c.checked=!c.checked;alert(e.message)}c.disabled=false})
+ }catch(e){$('admL').textContent=t('Could not load users: ','No se pudieron cargar los usuarios: ')+e.message}}
+bAl.onclick=()=>{kp.hidden=true;modal.classList.add('on');renderAl()};bAdm.onclick=()=>{kp.hidden=true;modal.classList.add('on');renderAdm()};
+window.svAlerts={renderAl,renderAdm};
+const tx=()=>{bAl.querySelector('.tx').textContent=t('Wind alerts','Alertas de viento');bAdm.querySelector('.tx').textContent=t('Alert recipients','Destinatarios de alertas')};
+kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(tx,200)});
+const w=setInterval(()=>{if(!window.svAuth||!window.svAuthMod)return;clearInterval(w);svAuthMod.onAuthStateChanged(svAuth,async u=>{UID=u?u.uid:null;U=null;bAl.hidden=!u;bAdm.hidden=true;if(!u)return;tx();
+ try{const q=await F().getDocs(F().query(F().collection(D(),'usernames'),F().where('authUid','==',u.uid)));q.forEach(d=>U=d.id)}catch(e){}
+ bAdm.hidden=U!==ADMIN;
+ const s=await curSub().catch(()=>null);if(s&&Notification.permission==='granted')save(s).catch(()=>{})})},300);
+})();
 </script>
 <script type="module">
 // ---- Firebase Auth gate: User ID (+ real email for recovery) & password; usernames/{id} in Firestore maps ID -> email ----
