@@ -55,8 +55,9 @@ out = {
   "windDir": r1(last("21796781-3")[0], 0),
   "solar": r1(last("20530536-1")[0], 0),
   "wetness": r1(last("20851391-1")[0], 0),
-  "etToday": r1(sum(et), 2) if et else r1(next((x.get("latest") for x in dev["sensors"] if x["sensorSerialNumber"] == "20537254-1"), None), 2),
-  "rainToday": r1(sum(r[1] for r in rain if r[0] >= mid_ms)) if rain else None,
+  # device ET sensor logs one daily total stamped at the START of that local day
+  "etYesterday": r1(next((r[1] for r in series.get("20537254-1", []) if r[0] == int(mid_ms) - 24 * 3600000), None), 2),
+  "rainToday": r1(sum(r[1] for r in rain if r[0] > mid_ms)) if rain else None,
   "rain24h": r1(sum(r[1] for r in rain if r[0] >= d24)) if rain else None,
   "soilWater": r1(soil, 3) if soil is not None and 0 <= soil <= 0.6 else None,
 }
@@ -75,12 +76,25 @@ SER = {"t": ("20530638-1", "avg", 1), "st": ("20496238-1", "avg", 1), "rh": ("20
 #       (anemometer treated as 2 m), solar radiation; Rn from Rs (albedo 0.23) and FAO-56
 #       net longwave with Rs/Rso; G = 0.1 Rn by day, 0.5 Rn by night; elevation 399 m.
 LAT, ELEV = -31.8506, 399.0
+def ghi_cs(ts_ms):
+    """clear-sky global irradiance (W/m2) at the middle of the 5-min record ending ts_ms; 0 if sun < 3 deg"""
+    loc = dt.datetime.fromtimestamp((ts_ms - 150000) / 1000, TZ); J = loc.timetuple().tm_yday
+    de = 0.409 * math.sin(2 * math.pi * J / 365 - 1.39); b = 2 * math.pi * (J - 81) / 364
+    Sc = 0.1645 * math.sin(2 * b) - 0.1255 * math.cos(b) - 0.025 * math.sin(b)
+    w = math.pi / 12 * (loc.hour + loc.minute / 60 + loc.second / 3600 + 0.06667 * (45 - 65.4294) + Sc - 12)
+    phi = math.radians(LAT); cz = math.sin(phi) * math.sin(de) + math.cos(phi) * math.cos(de) * math.cos(w)
+    if cz < math.sin(math.radians(3)): return 0.0
+    return (0.75 + 2e-5 * ELEV) * 1367 * (1 + 0.033 * math.cos(2 * math.pi * J / 365)) * cz
+# Sunshine (ratio method): a pyranometer can't see direct beam, so count minutes when global
+# radiation >= 40 % of clear-sky global radiation with the sun > 3 deg (approximates WMO 120 W/m2 direct).
+SUN_K = 0.4
 def sun_raw(t0, step, n):
     o = [0.0] * n; prev = None
     for ts_, x in series.get("20530536-1", []):
         dtm = min(15, (ts_ - prev) / 60000) if prev else 5; prev = ts_
         i = int((ts_ - 1 - t0) // step)
-        if 0 <= i < n and x >= 120: o[i] += dtm
+        cs = ghi_cs(ts_) if 0 <= i < n else 0
+        if cs > 0 and x >= SUN_K * cs: o[i] += dtm
     return o
 def et0_series(t0, step, n, v):
     P = 101.3 * ((293 - 0.0065 * ELEV) / 293) ** 5.26; gam = 0.000665 * P
@@ -103,9 +117,9 @@ def et0_series(t0, step, n, v):
         if Rso > 0.01 * hrs: ratio = min(1.0, Rs / Rso)
         es = 0.6108 * math.exp(17.27 * T / (T + 237.3)); ea = es * RH / 100
         Rnl = 4.903e-9 / 24 * hrs * (T + 273.16) ** 4 * (0.34 - 0.14 * math.sqrt(max(ea, 0))) * (1.35 * ratio - 0.35)
-        Rn = 0.77 * Rs - Rnl; G = (0.1 if Ra > 0 else 0.5) * Rn
+        Rn = 0.77 * Rs - Rnl; G = (0.04 if Ra > 0 else 0.2) * Rn; cd = 0.24 if Ra > 0 else 0.96  # ASCE-EWRI standardized short reference
         D = 4098 * es / (T + 237.3) ** 2
-        e = (0.408 * D * (Rn - G) + gam * (37 * hrs) / (T + 273) * U * (es - ea)) / (D + gam * (1 + 0.34 * U))
+        e = (0.408 * D * (Rn - G) + gam * (37 * hrs) / (T + 273) * U * (es - ea)) / (D + gam * (1 + cd * U))
         cum += max(0, e); out.append(round(cum, 2))
     return out
 import math
@@ -135,8 +149,10 @@ q0 = int(mid_ms) - 2 * 24 * H  # 15-min buckets from local midnight two days ago
 qn = int((end - q0) // Q) + 1
 h0 = int(mid_ms) - 7 * 24 * H  # hourly buckets from local midnight 7 days ago
 hn = int((end - h0) // H) + 1
-ser = {"fetched": now.isoformat(timespec="seconds"), "tz": "-03:00", "midnight": int(mid_ms), "etDev": out["etToday"],
+ser = {"fetched": now.isoformat(timespec="seconds"), "tz": "-03:00", "midnight": int(mid_ms), "etDev": out["etYesterday"],
        "q": bucket(q0, Q, qn), "h": bucket(h0, H, hn)}
+_e = [x for x in ser["q"]["v"]["e0"][int((mid_ms - q0) // Q):] if x is not None]
+out["et0Today"] = _e[-1] if _e else None
 json.dump(ser, open("data/station-series.json", "w"), ensure_ascii=False, separators=(",", ":"))
 print("series:", qn, "x15min,", hn, "x1h")
 old = None

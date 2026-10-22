@@ -55,7 +55,7 @@ for p_, r in enumerate(res):
         idx = [i for i, t in enumerate(htime) if t.startswith(day)]
         mean = []
         for i in idx:
-            v = [series(r, m, 'hourly', H)[i] for m in MODELS]; v = [x for x in v if isinstance(x, (int, float))]
+            v = [series(r, m, 'hourly', H)[i + 1] if i + 1 < H else None for m in MODELS]; v = [max(0.0, x) for x in v if isinstance(x, (int, float))]  # end-of-hour label: rain H->H+1 is at i+1
             mean.append(sum(v)/len(v) if v else 0.0)
         tot = sum(mean); f = daily_med[k][p_]/tot if tot > 0 else 0.0
         for i, mv in zip(idx, mean): hourly_f[i][p_] = mv*f
