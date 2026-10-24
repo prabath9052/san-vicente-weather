@@ -46,6 +46,7 @@ jobs:
                 echo "reading $now"
                 python3 -u scripts/wind_alert.py || echo "wind alert step failed (continuing)"
                 [ -z "$FORCE_THRESHOLD" ] && { python3 -u scripts/humidity_alert.py || echo "humidity alert step failed (continuing)"; }
+                python3 -u scripts/fs_sync.py || true
                 git add data/station.json data/station-series.json data/wind-alert-state.json $(ls data/humidity-alert-state.json data/alerts-log.json 2>/dev/null)
                 if ! git diff --cached --quiet; then
                   git commit -q -m "Update station conditions"

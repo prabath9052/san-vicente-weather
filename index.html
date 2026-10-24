@@ -191,7 +191,24 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 .bp-off{display:block;width:100%;margin:0 0 8px;padding:9px 10px;border:0;border-radius:10px;background:#f2b63233;color:inherit;font:inherit;font-size:.86rem;text-align:left;cursor:pointer}
 @media(max-width:600px){.bbtn{width:36px;height:36px;font-size:1.05rem}.bpop{position:fixed;left:10px;right:10px;top:76px;width:auto}}
 .bp-f{position:sticky;bottom:-12px;background:var(--card,#fff);margin-bottom:-12px;padding-bottom:12px}
-</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Private station data: read from Firestore 'private/{doc}' after login; public JSON fallback while staging =====
+(function(){const PUBLIC_FALLBACK=true;
+ const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
+ async function authReady(){for(let i=0;i<200&&!(window.svAuth&&window.svFs&&window.svDb);i++)await wait(50);if(!window.svAuth)return null;
+  try{await svAuth.authStateReady()}catch(e){}return svAuth.currentUser}
+ // waits (if needed) for a signed-in user; resolves null when signed out and fallback allowed
+ async function user(){const u=await authReady();if(u||PUBLIC_FALLBACK)return u;
+  return new Promise(res=>{const off=svAuthMod.onAuthStateChanged(svAuth,x=>{if(x){off();res(x)}})})}
+ window.svPrivStatus={};
+ window.svFetchPriv=async function(name,url,opt){const u=await user();
+  if(u){try{const s=await svFs.getDoc(svFs.doc(svDb,'private',name));if(s.exists()&&typeof s.data().json==='string'){const d=JSON.parse(s.data().json);svPrivStatus[name]='firestore';
+    return{ok:true,status:200,json:async()=>d}}svPrivStatus[name]='missing'}catch(e){svPrivStatus[name]='error: '+(e.code||e.message)}}
+  else svPrivStatus[name]='signed-out';
+  if(!PUBLIC_FALLBACK)return{ok:false,status:u?503:401,json:async()=>{throw new Error('unavailable')}};
+  const r=await fetch(url,opt);if(r.ok)svPrivStatus[name]+=' → public';return r};
+})();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="https://prabath9052.github.io/san-vicente-weather/manifest.webmanifest"><link rel="icon" href="https://prabath9052.github.io/san-vicente-weather/favicon.ico"><link rel="apple-touch-icon" href="https://prabath9052.github.io/san-vicente-weather/apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
 <div id="authGate" role="dialog" aria-modal="true" aria-labelledby="agTitle"><div class="ag-box">
@@ -641,7 +658,7 @@ const DIRS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','
 function feels(T,RH,W){if(T==null)return null;if(T>=27&&RH!=null&&RH>=40){const F=T*9/5+32;const H=-42.379+2.04901523*F+10.14333127*RH-.22475541*F*RH-.00683783*F*F-.05481717*RH*RH+.00122874*F*F*RH+.00085282*F*RH*RH-.00000199*F*F*RH*RH;return (H-32)*5/9}
  if(T<=10&&W!=null&&W>4.8){const v=Math.pow(W,.16);return 13.12+.6215*T-11.37*v+.3965*T*v}return T}
 function cell(l,v,sub,big){return `<div data-k="${l}"${big?' class="big"':''}><span>${l}</span><b>${v}</b>${sub?`<span>${sub}</span>`:''}</div>`}
-async function svStation(){const box=document.getElementById('now');try{const r=await fetch(SURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();
+async function svStation(){const box=document.getElementById('now');try{const r=await svFetchPriv('station',SURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();
  const fl=feels(d.temp,d.rh,d.wind);const dir=d.windDir==null?'':' '+DIRS[Math.round(d.windDir/22.5)%16];
  let h=cell('Temperature',f(d.temp)+' °C',`<span>max</span> ${f(d.tempMax)} / <span>min</span> ${f(d.tempMin)} °C`,1);
  if(fl!=null)h+=cell('Feels like',f(fl)+' °C');
@@ -659,7 +676,7 @@ let S=null,R='48h';const bg=document.getElementById('sgBg'),box=document.getElem
 const TZO=-3*3600e3,hh=ms=>{const d=new Date(ms+TZO);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
 const dd=ms=>new Date(ms).toLocaleDateString(SV_LANG==='es'?'es-AR':'en-GB',{timeZone:'America/Argentina/Cordoba',weekday:'short',day:'numeric'});
 const fm=(v,d)=>v==null?'—':t((+v).toFixed(d));
-async function load(){try{const r=await fetch(SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
+async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
 function slice(){if(!S)return null;const B=R==='7d'?S.h:S.q;if(!B||!B.v)return null;const now=Date.now();let a=R==='today'?S.midnight:R==='24h'?now-864e5:R==='48h'?now-1728e5:B.t0;
  const xs=[],ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=a-1&&x<=now){xs.push(x);ix.push(i)}}const g=k=>ix.map(i=>(B.v[k]||[])[i]??null);return{xs,step:B.step,g,a:xs.length?xs[0]:a,b:Math.max(now,xs.length?xs[xs.length-1]+B.step:now)}}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -888,7 +905,7 @@ const loc=x=>new Date(ts(x)).toLocaleString(ES()?'es-AR':'en-GB',{timeZone:'Amer
 function badge(anim){const n=LOG.filter(a=>ts(a.time)>seen()).length,d=$('bellDg');d.hidden=!n;d.textContent=n>9?'9+':n;
  bb.classList.toggle('off',PUSHON===false);bb.title=PUSHON===false?t('Alerts are off on this device','Alertas desactivadas en este dispositivo'):t('Alerts','Alertas');
  if(anim){bb.classList.remove('ring');void bb.offsetWidth;bb.classList.add('ring')}}
-async function loadLog(){try{const r=await fetch(LOGURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const a=await r.json();if(!Array.isArray(a))return;
+async function loadLog(){try{const r=await svFetchPriv('alertsLog',LOGURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const a=await r.json();if(!Array.isArray(a))return;
  const newest=a.length?ts(a[0].time):0,grew=LASTN!==null&&newest>LASTN;LOG=a;LASTN=newest;badge(grew);if(!bp.hidden)renderBell()}catch(e){}}
 async function pushState(){try{const s=await curSub();PUSHON=!!s&&Notification.permission==='granted'}catch(e){PUSHON=false}if(!SUP)PUSHON=false;badge()}
 function renderBell(){const sn=seen();
@@ -901,7 +918,7 @@ bb.onclick=e=>{e.stopPropagation();kp.hidden=true;if(bp.hidden){renderBell();bp.
 bp.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',()=>{if(!bp.hidden){bp.hidden=true;bb.setAttribute('aria-expanded','false')}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!bp.hidden)bp.hidden=true});
 kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(()=>{badge();if(!bp.hidden)renderBell()},200)});
-$('refresh').addEventListener('click',()=>setTimeout(loadLog,500));setInterval(loadLog,2*60e3);
+$('refresh').addEventListener('click',()=>setTimeout(loadLog,500));setInterval(loadLog,5*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadLog();pushState()}});
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.svPush)setTimeout(loadLog,1500)});
 window.svBell={loadLog,pushState,badge,renderBell};
