@@ -168,6 +168,19 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 @media(max-width:600px){#nowg{display:grid!important;grid-template-columns:1fr 1fr!important;overflow:visible!important;scroll-snap-type:none!important;gap:8px}#nowg>*{min-width:0!important;width:auto!important;flex:none!important}#nowg .v,#nowg b{font-size:1.25rem;overflow-wrap:anywhere}}
 .chips{flex-wrap:wrap}.chip{white-space:normal!important;max-width:100%;overflow:visible}.card{overflow:visible}
 .chip{display:inline-block!important;line-height:1.35}
+
+/* uniform station tiles */
+#nowg{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;overflow:visible!important}
+#nowg>div{display:flex!important;flex-direction:column;justify-content:flex-start;min-height:108px;padding:12px 40px 12px 14px!important;position:relative;min-width:0!important;flex:none!important;width:auto!important;box-sizing:border-box}
+#nowg>div>span:first-child{font-size:.85rem;line-height:1.25;min-height:2.5em}
+#nowg>div b{font-size:1.4rem!important;margin:4px 0!important;line-height:1.2;overflow-wrap:anywhere;white-space:normal}
+#nowg>div>span:nth-child(3){font-size:.8rem;opacity:.8;min-height:1.2em;display:block}
+#nowg>div::before{position:absolute;right:10px;top:8px;font-size:1.3rem;opacity:.85}
+#nowg>[data-k="Feels like"]::before{content:"🧥"}#nowg>[data-k="Dew point"]::before{content:"💦"}#nowg>[data-k="Rain last 24 h"]::before{content:"☔"}#nowg>[data-k="Leaf wetness"]::before{content:"🍃"}#nowg>[data-k="Reference ET today"]::before{content:"🌱"}#nowg>[data-k="Reference ET yesterday (station)"]::before{content:"🌿"}#nowg>[data-k="Soil temp"]::before{content:"🟫"}#nowg>[data-k="Solar radiation"]::before{content:"☀️"}
+#nowg2{display:none!important}
+@media(max-width:900px) and (min-width:601px){#nowg{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:600px){#nowg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}#nowg>div{min-height:100px;padding:10px 34px 10px 12px!important}#nowg>div b{font-size:1.2rem!important}#nowg>div::before{font-size:1.15rem;right:8px}}
+#nowg{grid-auto-rows:1fr!important}
 </style><style id="al">.al-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.al-bg.on{display:flex}
 .al-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
 .al-box h3{margin:0 28px 8px 0;font-size:1.15rem}.al-x{position:absolute;top:10px;right:10px;border:0;background:none;font-size:1.2rem;cursor:pointer;color:inherit;width:36px;height:36px}
@@ -811,8 +824,9 @@ setInterval(hero,60e3);
 // --- now panel: 4 big tiles + all other readings (always shown) ---
 const MAIN=['Temperature','Wind','Rain today','Humidity'];
 function arrange(){const g=$('nowg'),g2=$('nowg2');const kids=[...g.children];if(!kids.length||!kids[0].dataset.k)return;
- if(kids.length===MAIN.length&&kids.every(k=>MAIN.includes(k.dataset.k)))return;
- g2.innerHTML='';MAIN.forEach(k=>{const n=kids.find(x=>x.dataset.k===k);if(n)g.appendChild(n)});kids.filter(x=>!MAIN.includes(x.dataset.k)).forEach(n=>g2.appendChild(n));}
+ if(g2.children.length)g2.innerHTML='';const order=[...MAIN,...kids.map(x=>x.dataset.k).filter(k=>!MAIN.includes(k))];
+ if(kids.every((n,i)=>n.dataset.k===order[i])&&!kids.some(n=>n.classList.contains('big')))return;
+ kids.forEach(n=>n.classList.remove('big'));order.forEach(k=>{const n=kids.find(x=>x.dataset.k===k);if(n)g.appendChild(n)});}
 new MutationObserver(arrange).observe($('nowg'),{childList:true});
 $('openGraphs').addEventListener('click',e=>{e.stopPropagation();$('now').click()});
 window.addEventListener('svstation',()=>{arrange();hero();glance()});
