@@ -34,5 +34,6 @@ def main():
         except urllib.error.HTTPError as e:
             print(f"fs_sync: {name} write failed HTTP {e.code}" + (" (rules not published yet?)" if e.code == 403 else ""))
     json.dump(hc, open(HC, "w")); print("fs_sync: wrote", ", ".join(ok) or "none")
-try: main()
-except Exception as e: print("fs_sync failed:", type(e).__name__, getattr(e, "code", ""))
+if __name__ == "__main__":
+  try: main()
+  except Exception as e: print("fs_sync failed:", type(e).__name__, getattr(e, "code", ""))

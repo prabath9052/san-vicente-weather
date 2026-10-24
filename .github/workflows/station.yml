@@ -1,6 +1,8 @@
 name: Update station current conditions
 # GitHub delays */15 schedules (measured 21-51 min gaps), so each run keeps polling
-# HOBOlink for ~27 min and commits every new reading (station logs/uploads every 10 min).
+# HOBOlink for ~27 min (station logs/uploads every 10 min). Station data, alert history and alert state are
+# private: restored from Firestore 'private/*' at start (fs_pull) and saved back after each reading (fs_sync).
+# Nothing is committed to the repo.
 on:
   schedule:
     - cron: '7,22,37,52 * * * *'
@@ -13,7 +15,7 @@ on:
         description: 'TEST: only send to this Firebase uid'
         required: false
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: station
   cancel-in-progress: false
@@ -25,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install
         run: pip install -q pywebpush
-      - name: Poll station, alert, commit
+      - name: Poll station, alert, save to Firestore
         env:
           HOBOLINK_API_TOKEN: ${{ secrets.HOBOLINK_API_TOKEN }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
@@ -34,8 +36,7 @@ jobs:
           FORCE_THRESHOLD: ${{ github.event.inputs.force_threshold }}
           ONLY_UID: ${{ github.event.inputs.only_uid }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          python3 -u scripts/fs_pull.py
           obs() { python3 -c "import json;print(json.load(open('data/station.json')).get('observed',''))" 2>/dev/null; }
           END=$(( $(date +%s) + 27*60 )); [ -n "$FORCE_THRESHOLD" ] && END=0
           last=$(obs); first=1
@@ -47,11 +48,6 @@ jobs:
                 python3 -u scripts/wind_alert.py || echo "wind alert step failed (continuing)"
                 [ -z "$FORCE_THRESHOLD" ] && { python3 -u scripts/humidity_alert.py || echo "humidity alert step failed (continuing)"; }
                 python3 -u scripts/fs_sync.py || true
-                git add data/station.json data/station-series.json data/wind-alert-state.json $(ls data/humidity-alert-state.json data/alerts-log.json 2>/dev/null)
-                if ! git diff --cached --quiet; then
-                  git commit -q -m "Update station conditions"
-                  for i in 1 2 3 4 5; do git pull -q --rebase -X theirs && git push -q && break; sleep $((i*7)); done
-                fi
                 last=$now
               fi
             else echo "fetch failed (will retry)"; fi

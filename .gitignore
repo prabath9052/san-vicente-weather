@@ -1,1 +1,7 @@
 __pycache__/
+# private (stored in Firestore private/*, never committed)
+data/station.json
+data/station-series.json
+data/alerts-log.json
+data/wind-alert-state.json
+data/humidity-alert-state.json

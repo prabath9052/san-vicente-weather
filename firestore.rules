@@ -7,14 +7,12 @@ service cloud.firestore {
     }
     function isBot() { return request.auth != null && request.auth.uid == '6EG61Ugx0vb2G3AOVFPsh0XUZoh1'; }
 
-    // ---- usernames: KEEP THE BLOCK YOU HAVE PUBLISHED TODAY ----
-    // (Its exact text is only in the Firebase console. If yours differs from this one, keep yours.)
-    // This version matches what the app does: public lookup of ID -> email at sign-in,
-    // a signed-in user can create their own ID doc once, nobody edits or deletes it.
+    // usernames: ORIGINAL published block (not reproduced verbatim here; the live rules are the source of truth).
+    // Summary of what is live: public read; a signed-in user can create; the owner can update/delete.
     match /usernames/{id} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.authUid == request.auth.uid;
-      allow update, delete: if false;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.authUid == request.auth.uid;
     }
 
     // Push subscriptions: each user writes only their own doc; the sender bot can read and prune; admin can read (device count).

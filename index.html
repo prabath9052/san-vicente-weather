@@ -191,8 +191,8 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 .bp-off{display:block;width:100%;margin:0 0 8px;padding:9px 10px;border:0;border-radius:10px;background:#f2b63233;color:inherit;font:inherit;font-size:.86rem;text-align:left;cursor:pointer}
 @media(max-width:600px){.bbtn{width:36px;height:36px;font-size:1.05rem}.bpop{position:fixed;left:10px;right:10px;top:76px;width:auto}}
 .bp-f{position:sticky;bottom:-12px;background:var(--card,#fff);margin-bottom:-12px;padding-bottom:12px}
-</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Private station data: read from Firestore 'private/{doc}' after login; public JSON fallback while staging =====
-(function(){const PUBLIC_FALLBACK=true;
+</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Private station data: read from Firestore 'private/{doc}' after login (no public copy) =====
+(function(){const PUBLIC_FALLBACK=false;
  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
  async function authReady(){for(let i=0;i<200&&!(window.svAuth&&window.svFs&&window.svDb);i++)await wait(50);if(!window.svAuth)return null;
   try{await svAuth.authStateReady()}catch(e){}return svAuth.currentUser}
