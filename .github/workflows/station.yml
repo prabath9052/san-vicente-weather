@@ -45,7 +45,8 @@ jobs:
               if [ "$now" != "$last" ] || [ $first = 1 ] || [ -n "$FORCE_THRESHOLD" ]; then
                 echo "reading $now"
                 python3 -u scripts/wind_alert.py || echo "wind alert step failed (continuing)"
-                git add data/station.json data/station-series.json data/wind-alert-state.json
+                [ -z "$FORCE_THRESHOLD" ] && { python3 -u scripts/humidity_alert.py || echo "humidity alert step failed (continuing)"; }
+                git add data/station.json data/station-series.json data/wind-alert-state.json $(ls data/humidity-alert-state.json 2>/dev/null)
                 if ! git diff --cached --quiet; then
                   git commit -q -m "Update station conditions"
                   for i in 1 2 3 4 5; do git pull -q --rebase -X theirs && git push -q && break; sleep $((i*7)); done
