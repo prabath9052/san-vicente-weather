@@ -193,6 +193,14 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 .sgsec .hm-b{max-height:none;overflow:visible}
 @media(max-width:600px){.sgsec .hm.sg-inline{height:auto}.sgsec .hm-h{padding:10px 12px}.sgsec .hm-h h3{font-size:1.05rem}.sgsec .sg-tog{flex-wrap:nowrap;overflow-x:auto}.sgsec .sg-tog button{flex:1 0 auto;padding:6px 10px}}
 html[data-theme=dark] .sgsec .hm-h{background:#1d4a69}
+/* desktop tab bar: full width, bigger font, colourful accents */
+@media(min-width:900px){.tabs{max-width:none;width:100%;box-sizing:border-box;gap:8px;padding:6px}
+.tabs button{font-size:1.08rem;font-weight:800;min-height:54px;gap:10px;color:var(--fg);border:1px solid transparent}
+.tabs .ti{font-size:1.5rem;filter:none!important;opacity:1!important}
+.tabs button[data-t=fc]{background:#fff4dc;color:#9a5b00}.tabs button[data-t=map]{background:#e3f1ff;color:#1d5f9e}.tabs button[data-t=st]{background:#e4f6ea;color:#1f7a45}
+.tabs button:hover{filter:brightness(.97)}
+.tabs button.on{background:var(--acc)!important;color:#fff!important;box-shadow:0 2px 8px #2f7fb855}
+html[data-theme=dark] .tabs button[data-t=fc]{background:#3a2f1a;color:#ffd58a}html[data-theme=dark] .tabs button[data-t=map]{background:#1b2f45;color:#9fd0ff}html[data-theme=dark] .tabs button[data-t=st]{background:#1c3626;color:#9be3b5}}
 </style><style id="al">.al-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.al-bg.on{display:flex}
 .al-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
 .al-box h3{margin:0 28px 8px 0;font-size:1.15rem}.al-x{position:absolute;top:10px;right:10px;border:0;background:none;font-size:1.2rem;cursor:pointer;color:inherit;width:36px;height:36px}
