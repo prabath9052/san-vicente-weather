@@ -1,7 +1,7 @@
 {
- "alerting": false,
- "lastWind": 14.4,
- "checked": "2026-10-24T11:19-03:00",
- "observed": "2026-10-24T11:10:00-03:00",
- "lastSent": "2026-10-24T08:43-03:00"
+ "alerting": true,
+ "lastWind": 15.6,
+ "checked": "2026-10-24T11:24-03:00",
+ "observed": "2026-10-24T11:20:00-03:00",
+ "lastSent": "2026-10-24T11:24-03:00"
 }
