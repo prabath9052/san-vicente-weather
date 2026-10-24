@@ -287,7 +287,7 @@ html[data-theme=dark] .sgsec .hm-h{background:#1d4a69}
 <div id="recBanner" class="rec-b" hidden><div id="recIntro"><span>Your account has no recovery email. Add one so you can reset your password if you forget it.</span> <button type="button" id="recOpen">Add recovery email</button></div>
 <form id="recForm" hidden novalidate><label for="recEmail"><span>Recovery email</span></label><input type="email" id="recEmail" autocomplete="email" autocapitalize="none" maxlength="120"><div id="recPwWrap" hidden><label for="recPw"><span>For security, enter your current password</span></label><input type="password" id="recPw" autocomplete="current-password"></div><div class="rec-btns"><button type="submit" id="recSave">Send verification email</button><button type="button" id="recCancel">Cancel</button></div><div class="ag-err" id="recErr" role="alert" hidden></div></form><div id="recDone" class="ag-ok" hidden></div></div>
 <div class="status" id="status"></div>
-<section class="now" id="now" hidden><h2><span>Now at San Vicente</span><small>· <span>Fondomonte station</span></small><small id="nowUpd"></small><span class="sghint" id="sgHint" hidden>Tap for today's graphs</span></h2><div class="nowg" id="nowg"></div><div class="nowg nowg2" id="nowg2"></div><button type="button" class="gbtn" id="openGraphs">📈 <span>Open station graphs</span></button></section>
+<section class="now" id="now" hidden><h2><span>Now at San Vicente</span><small>· <span>Fondomonte station</span></small><small id="nowUpd"></small><span class="sghint" id="sgHint" hidden>Tap for today's graphs</span></h2><div class="nowg" id="nowg"></div><div class="nowg nowg2" id="nowg2"></div></section>
 <section class="sgsec" id="stGraphs" data-tab="st" hidden><div class="hm sg-inline"><div class="hm-h"><h3 id="sgTitle"></h3><button id="sgX" aria-label="Close">✕</button></div><div class="sg-tog" role="group" aria-label="Graph range"><button data-r="today">Today</button><button data-r="24h">Last 24 h</button><button data-r="48h" class="on">Last 48 h</button><button data-r="7d">Last 7 days</button></div><div class="hm-b" id="sgBody"></div></div></section>
 <div class="rtog" role="group" aria-label="Forecast length"><button data-n="7" class="on">7 days</button><button data-n="14">Extended <small>(days 8–14)</small></button></div><div class="cards" id="cards"></div><p class="muted" id="rcNote">Days 1–7 rain: “about X mm” = median of the sources (same total used for the hourly popup and map), grey = min–max of the sources; chance = share of Open-Meteo ensemble members (ECMWF 51, GFS 31, GEM 21; every member counted equally) with ≥1 mm that day, or “n/N models” with ≥1 mm when ensemble data is missing.</p><div id="ext" hidden><h3 class="exth" style="margin-top:0">Days 8–14 <span class="tag Low">Extended outlook – low confidence</span></h3><div class="cards" id="cards2"></div><p class="muted">Days 8–14 are based on the Open-Meteo ensembles (ECMWF 51, GFS 31 to ~day 10, GEM 21 members; every member counted equally): median, 10–90% range and the share of members with ≥1 mm. The deterministic models (ECMWF, GFS, GEM to day 9; best match only when it is not a copy of another model) are shown for reference. Rain timing is not shown, models are 3–6-hourly this far out.</p></div>
 <section class="box"><h2>7-day summary</h2><p id="summary">Loading…</p></section>
@@ -841,7 +841,7 @@ function arrange(){const g=$('nowg'),g2=$('nowg2');const kids=[...g.children];if
  if(kids.every((n,i)=>n.dataset.k===order[i])&&!kids.some(n=>n.classList.contains('big')))return;
  kids.forEach(n=>n.classList.remove('big'));order.forEach(k=>{const n=kids.find(x=>x.dataset.k===k);if(n)g.appendChild(n)});}
 new MutationObserver(arrange).observe($('nowg'),{childList:true});
-$('openGraphs').addEventListener('click',e=>{e.stopPropagation();$('now').click()});
+$('openGraphs')?.addEventListener('click',e=>{e.stopPropagation();$('now').click()});
 window.addEventListener('svstation',()=>{arrange();hero();glance()});
 // --- tabs ---
 function tagMain(){[...document.querySelector('main').children].forEach(n=>{if(n.dataset.tab||n.id==='tabs'||n.id==='recBanner')return;n.dataset.tab=n.id==='now'?'st':n.id==='mapbox'?'map':n.id==='status'?'fc':'fc'})}
@@ -1051,8 +1051,7 @@ async function exportData(fmt){if(!(V&&V.days&&V.days.length))return;const T=tab
 window.svVerifyExport=exportData;
 async function load(){try{const r=await svFetchPriv('verification','about:blank');if(!r.ok)throw new Error('HTTP '+r.status);V=await r.json()}catch(e){V={err:e.message}}render()}
 window.svVerify=()=>{modal.classList.add('on');render();load()};
-// entry points: station panel button + ⋮ menu
-const g=$('openGraphs');if(g){const b=document.createElement('button');b.type='button';b.className='gbtn';b.id='openVerify';b.innerHTML='📊 <span>Forecast vs station</span>';g.after(b);b.onclick=()=>svVerify()}
+// entry points: ⋮ menu
 const kp=$('kPop');if(kp){const m=document.createElement('button');m.type='button';m.id='vfBtn';m.className='kitem';m.hidden=!document.body.classList.contains('authed');m.innerHTML='<span>📊</span> <span class="tx">Forecast vs station</span>';kp.querySelector('#themeBtn').after(m);m.onclick=()=>{kp.hidden=true;svVerify()};
  new MutationObserver(()=>{m.hidden=!document.body.classList.contains('authed')}).observe(document.body,{attributes:true,attributeFilter:['class']})}
 const tx=()=>{const s=ES()?'Pronóstico vs estación':'Forecast vs station';document.querySelectorAll('#openVerify span,#vfBtn .tx').forEach(e=>e.textContent=s);if(modal.classList.contains('on'))render()};
