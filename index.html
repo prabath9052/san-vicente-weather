@@ -201,6 +201,10 @@ html[data-theme=dark] .sgsec .hm-h{background:#1d4a69}
 .tabs button:hover{filter:brightness(.97)}
 .tabs button.on{background:var(--acc)!important;color:#fff!important;box-shadow:0 2px 8px #2f7fb855}
 html[data-theme=dark] .tabs button[data-t=fc]{background:#3a2f1a;color:#ffd58a}html[data-theme=dark] .tabs button[data-t=map]{background:#1b2f45;color:#9fd0ff}html[data-theme=dark] .tabs button[data-t=st]{background:#1c3626;color:#9be3b5}}
+/* graph zoom */
+#sgBody .sg-w svg{touch-action:pan-y;cursor:crosshair}body.sgz #sgBody .sg-w svg{cursor:grab}
+.sg-reset{border:1px solid;border-radius:10px;padding:4px 12px;font-weight:700;font-size:.8rem;min-height:30px;background:#fff3d6!important;color:#8a5a00!important;border-color:#f0d49a!important}
+.sg-zh{font-size:.75rem;color:var(--mut);padding:6px 12px 0;display:flex;align-items:center;gap:8px;min-height:30px}.sg-zh .sg-reset{margin-left:auto}
 </style><style id="al">.al-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.al-bg.on{display:flex}
 .al-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
 .al-box h3{margin:0 28px 8px 0;font-size:1.15rem}.al-x{position:absolute;top:10px;right:10px;border:0;background:none;font-size:1.2rem;cursor:pointer;color:inherit;width:36px;height:36px}
@@ -731,7 +735,7 @@ const dd=ms=>new Date(ms).toLocaleDateString(SV_LANG==='es'?'es-AR':'en-GB',{tim
 const fm=(v,d)=>v==null?'—':t((+v).toFixed(d));
 async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;document.getElementById('stGraphs').hidden=false;render();box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
 function slice(){if(!S)return null;const B=R==='7d'?S.h:S.q;if(!B||!B.v)return null;const now=Date.now();let a=R==='today'?S.midnight:R==='24h'?now-864e5:R==='48h'?now-1728e5:B.t0;
- const xs=[],ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=a-1&&x<=now){xs.push(x);ix.push(i)}}const g=k=>ix.map(i=>(B.v[k]||[])[i]??null);return{xs,step:B.step,g,a:xs.length?xs[0]:a,b:Math.max(now,xs.length?xs[xs.length-1]+B.step:now)}}
+ let xs=[],ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=a-1&&x<=now){xs.push(x);ix.push(i)}}let fa=xs.length?xs[0]:a,fb=Math.max(now,xs.length?xs[xs.length-1]+B.step:now);window.SVF={a:fa,b:fb,step:B.step};const Z=window.SVZ;if(Z){const k=xs.map((x,j)=>x>=Z.a&&x+B.step<=Z.b+1?j:-1).filter(j=>j>=0);xs=k.map(j=>xs[j]);ix=k.map(j=>ix[j]);fa=Z.a;fb=Z.b}const g=k=>ix.map(i=>(B.v[k]||[])[i]??null);return{xs,step:B.step,g,a:fa,b:fb}}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const dlab=ms=>{const d=new Date(ms+TZO);return d.getUTCDate()+'. '+(SV_LANG==='es'?MES:MON)[d.getUTCMonth()]};
 const VPD=(T,RH)=>T==null||RH==null?null:+(0.6108*Math.exp(17.27*T/(T+237.3))*(1-RH/100)).toFixed(2);
@@ -780,7 +784,7 @@ function render(){document.querySelectorAll('.sg-tog button').forEach(b=>b.class
  h+=mchart(D,[{v:LW,c:'#3aa0a0',fill:'#bfe6e6',op:.6,ax:'r',type:'area',name:n('Leaf wetness'),u:'%',d:0},{v:ST,c:'#8a5a2b',ax:'l',w:1.8,name:n('Soil temperature'),u:'°C'}],{l:{t:n('Soil temperature')+' [°C]'},r:{t:n('Leaf wetness')+' [%]',min:0,max:100},al:'Soil'});
  h+=mchart(D,[{v:SS,c:'#e8c800',ax:'l',type:'bar',name:n('Sunshine duration'),u:n('min'),d:0}],{l:{t:n('Sunshine duration')+' ['+n('min')+']',min:0,max:R==='7d'?60:15},bw:.55,al:'Sunshine'});
  h+=`<p class="muted sg-note">${n('VPD and Delta T are calculated from air temperature and humidity (Delta T = air temperature − wet-bulb, Stull formula). Sunshine = minutes with global radiation ≥ 40 % of clear-sky radiation (sun above 3°), a ratio estimate of WMO sunshine. ET0 = ASCE standardized (FAO-56 Penman-Monteith, short-step) reference evapotranspiration calculated from the station data, accumulated since midnight. The station has no battery or solar panel voltage channels, so soil temperature and leaf wetness are shown instead.')}</p>`;
- body.innerHTML=h}
+ body.innerHTML=`<div class="sg-zh" id="sgZh"></div>`+h;document.body.classList.toggle('sgz',!!window.SVZ);window.svZoomUI&&svZoomUI()}
 
 function open(){if(!S)return;render();document.getElementById('stGraphs').scrollIntoView({behavior:'smooth',block:'start'})}
 function close(){bg.classList.remove('on');document.body.style.overflow=''}
@@ -789,7 +793,7 @@ document.getElementById('sgX').onclick=close;bg.addEventListener('click',e=>{if(
 document.addEventListener('keydown',e=>{if(bg.classList.contains('on')&&e.key==='Escape')close()});
 document.querySelector('.sg-tog').addEventListener('click',e=>{const r=e.target.closest('button')?.dataset.r;if(r){R=r;render()}});
 document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>{if(bg.classList.contains('on'))render()}));
-body.addEventListener('pointermove',tip);body.addEventListener('pointerdown',tip);body.addEventListener('pointerleave',()=>body.querySelectorAll('.sg-tt').forEach(x=>x.hidden=true));window.svStationGraphs=open;load();document.getElementById('refresh').addEventListener('click',load);setInterval(load,5*60e3)})();
+body.addEventListener('pointermove',tip);body.addEventListener('pointerdown',tip);body.addEventListener('pointerleave',()=>body.querySelectorAll('.sg-tt').forEach(x=>x.hidden=true));window.svStationGraphs=open;window.svCH=CH;window.svSgRender=()=>{if(S)render()};load();document.getElementById('refresh').addEventListener('click',load);setInterval(load,5*60e3)})();
 </script>
 <script>
 function svAnchorDay(bg,doScroll){if(innerWidth<=600){bg.classList.remove('anch');bg.style.top='';const h0=bg.querySelector('.hm');if(h0){h0.style.left='';h0.style.width=''}return}const tg=document.querySelector('.rtog'),now=document.getElementById('now');if(!tg)return;
@@ -1064,6 +1068,39 @@ const kp=$('kPop');if(kp){const m=document.createElement('button');m.type='butto
  new MutationObserver(()=>{m.hidden=!document.body.classList.contains('authed')}).observe(document.body,{attributes:true,attributeFilter:['class']})}
 const tx=()=>{const s=ES()?'Pronóstico vs estación':'Forecast vs station';document.querySelectorAll('#openVerify span,#vfBtn .tx').forEach(e=>e.textContent=s);if(modal.classList.contains('on'))render()};
 document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(tx,200)});setTimeout(tx,1500);
+})();
+</script>
+<script>// ===== Station graphs: pinch / pan / wheel zoom on the time axis =====
+(function(){window.SVZ=null;let raf=0;
+const rr=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;window.svSgRender&&svSgRender()})};
+const F=()=>window.SVF||null;
+function setZ(a,b){const f=F();if(!f)return;const full=f.b-f.a,min=Math.max(4*f.step,36e5);let s=Math.max(min,b-a);if(s>=full*0.999){window.SVZ=null;rr();return}a=Math.max(f.a,Math.min(a,f.b-s));window.SVZ={a,b:a+s};rr()}
+function geo(el,cx){const w=el.closest&&el.closest('.sg-w');if(!w)return null;const c=(window.svCH||[])[+w.dataset.ch],svg=w.querySelector('svg');if(!c||!svg)return null;const r=svg.getBoundingClientRect();const fr=Math.max(0,Math.min(1,((cx-r.left)*c.W/r.width-c.pl)/c.iw));const a=c.D.a,b=c.D.b;return{fr,a,b,t:a+fr*(b-a),r,c}}
+document.addEventListener('touchstart',e=>{const tg=e.target;if(!tg.closest||!tg.closest('#sgBody .sg-w svg'))return;
+ const T=e.touches;let st=null;
+ if(T.length===2){const cx=(T[0].clientX+T[1].clientX)/2,g=geo(tg,cx);if(!g)return;st={m:2,d0:Math.abs(T[0].clientX-T[1].clientX)||1,g,span:g.b-g.a};e.preventDefault()}
+ else if(T.length===1&&window.SVZ){const g=geo(tg,T[0].clientX);if(!g)return;st={m:1,x0:T[0].clientX,y0:T[0].clientY,g,span:g.b-g.a,dir:0}}
+ if(!st)return;
+ const mv=ev=>{const U=ev.touches;
+  if(U.length===2){if(st.m!==2){const cx=(U[0].clientX+U[1].clientX)/2,g=geo(tg,cx)||st.g;st={m:2,d0:Math.abs(U[0].clientX-U[1].clientX)||1,g,span:(window.SVZ?SVZ.b-SVZ.a:g.b-g.a)};}
+   ev.preventDefault();const d=Math.abs(U[0].clientX-U[1].clientX)||1,s=st.span*st.d0/d,cx=(U[0].clientX+U[1].clientX)/2,r=st.g.r,c=st.g.c,fr=Math.max(0,Math.min(1,((cx-r.left)*c.W/r.width-c.pl)/c.iw));setZ(st.g.t-fr*s,st.g.t-fr*s+s)}
+  else if(U.length===1&&st.m===1){const dx=U[0].clientX-st.x0,dy=U[0].clientY-st.y0;if(!st.dir&&(Math.abs(dx)>6||Math.abs(dy)>6))st.dir=Math.abs(dx)>Math.abs(dy)?'x':'y';
+   if(st.dir==='x'){ev.preventDefault();const r=st.g.r,c=st.g.c,dt=-dx*c.W/r.width/c.iw*st.span;setZ(st.g.a+dt,st.g.a+dt+st.span)}}};
+ const end=ev=>{if(ev.touches.length===0){tg.removeEventListener('touchmove',mv);tg.removeEventListener('touchend',end);tg.removeEventListener('touchcancel',end)}};
+ tg.addEventListener('touchmove',mv,{passive:false});tg.addEventListener('touchend',end);tg.addEventListener('touchcancel',end)},{passive:false});
+// double-tap / double-click reset
+let lt=0;document.addEventListener('touchend',e=>{if(!e.target.closest||!e.target.closest('#sgBody .sg-w svg')||e.touches.length)return;const n=Date.now();if(n-lt<300&&window.SVZ){window.SVZ=null;rr();e.preventDefault()}lt=n});
+document.addEventListener('dblclick',e=>{if(e.target.closest&&e.target.closest('#sgBody .sg-w svg')&&window.SVZ){window.SVZ=null;rr()}});
+// desktop: Ctrl/⌘+wheel or trackpad pinch zooms; drag pans when zoomed
+document.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;const tg=e.target;if(!tg.closest||!tg.closest('#sgBody .sg-w svg'))return;const g=geo(tg,e.clientX);if(!g)return;e.preventDefault();const s=(g.b-g.a)*Math.exp(e.deltaY*0.01);setZ(g.t-g.fr*s,g.t-g.fr*s+s)},{passive:false});
+document.addEventListener('mousedown',e=>{if(!window.SVZ||e.button)return;const tg=e.target;if(!tg.closest||!tg.closest('#sgBody .sg-w svg'))return;const g=geo(tg,e.clientX);if(!g)return;e.preventDefault();const sp=g.b-g.a,x0=e.clientX;
+ const mv=ev=>{const dt=-(ev.clientX-x0)*g.c.W/g.r.width/g.c.iw*sp;setZ(g.a+dt,g.a+dt+sp)},up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};addEventListener('mousemove',mv);addEventListener('mouseup',up)});
+// reset button + range buttons clear zoom
+let tg0=null;function ui(){const tog=document.querySelector('.sg-tog');if(tog&&tog!==tg0){tg0=tog;tog.addEventListener('click',e=>{if(e.target.closest('button[data-r]'))window.SVZ=null},true)}
+ const zh=document.getElementById('sgZh');if(!zh||document.getElementById('sgReset'))return;const sp=document.createElement('span');sp.id='sgZt';zh.appendChild(sp);const b=document.createElement('button');b.type='button';b.id='sgReset';b.className='sg-reset';b.hidden=true;zh.appendChild(b);b.addEventListener('click',e=>{e.stopPropagation();window.SVZ=null;rr()})}
+window.svZoomUI=function(){ui();const b=document.getElementById('sgReset');if(b){b.hidden=!window.SVZ;b.textContent='⤺ '+(window.SV_LANG==='es'?'Restablecer zoom':'Reset zoom')}
+ const h=document.getElementById('sgZt');const tip=window.SV_LANG==='es'?'Pellizcá con dos dedos para acercar/alejar':'Pinch with two fingers to zoom in/out';if(h)h.textContent=tip};
+if(document.querySelector(".sg-tog"))svZoomUI();
 })();
 </script>
 <script type="module">
