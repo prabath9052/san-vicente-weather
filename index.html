@@ -813,6 +813,12 @@ let U=null,UID=null,REG=null;
 const b64=s=>{s=(s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
 const ekey=e=>{let h=0;for(const c of e)h=(h*31+c.charCodeAt(0))>>>0;return 'e'+h.toString(36)+e.length};
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js',{scope:'./'}).then(r=>REG=r).catch(e=>console.warn('sw',e));
+
+// wind sound: played when a push arrives while the app is open, or when opened/focused from the notification
+const SND=new Audio('wind-gust.mp3');SND.preload='auto';window.svWindSound=()=>{try{SND.currentTime=0;const p=SND.play();p&&p.catch(()=>{window.SVSND_PENDING=true})}catch(e){}};
+document.addEventListener('pointerdown',()=>{if(window.SVSND_PENDING){window.SVSND_PENDING=false;svWindSound()}},{capture:true});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.play)svWindSound()});
+if(new URLSearchParams(location.search).get('svsound')){svWindSound();history.replaceState(null,'',location.pathname+location.hash)}
 // menu items
 const kp=$('kPop');const mk=(id,html)=>{const b=document.createElement('button');b.type='button';b.id=id;b.className='kitem';b.hidden=true;b.innerHTML=html;kp.querySelector('#themeBtn').after(b);return b};
 const bAdm=mk('admBtn','<span>👥</span> <span class="tx">Alert recipients</span>'),bAl=mk('alBtn','<span>🔔</span> <span class="tx">Wind alerts</span>');

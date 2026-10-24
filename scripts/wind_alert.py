@@ -19,7 +19,12 @@ st = json.load(open("data/station.json"))
 wind, gust = st.get("wind"), st.get("gust")
 force = os.environ.get("FORCE_THRESHOLD"); only = os.environ.get("ONLY_UID")
 state = json.load(open(ST)) if os.path.exists(ST) else {"alerting": False}
-if wind is None: print("no wind reading"); sys.exit(0)
+# Station only: 'wind' is the HOBOlink anemometer's latest measured average (sensor 21796781-1), never forecast data.
+if wind is None: print("no station wind reading"); sys.exit(0)
+try:
+    age = (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(st["observed"])).total_seconds() / 60
+except Exception: age = 0
+if age > 90 and not force: print(f"station reading is {age:.0f} min old; skipping"); sys.exit(0)
 now = dt.datetime.now(dt.timezone(dt.timedelta(hours=-3))).isoformat(timespec="minutes")
 if force:
     send = wind > float(force)
@@ -43,8 +48,8 @@ try:
   uids = [d["name"].rsplit("/", 1)[1] for d in noms if d.get("fields", {}).get("wind", {}).get("booleanValue")]
   if only: uids = [u for u in uids if u == only] or ([only] if force else [])
   g = f"{gust:.0f}" if isinstance(gust, (int, float)) else "—"
-  MSG = {"en": ("Windy for spraying", f"Windy for spraying: {wind:.0f} km/h now at San Vicente (gust {g})"),
-         "es": ("Viento para pulverizar", f"Viento para pulverizar: {wind:.0f} km/h ahora en San Vicente (ráfaga {g})")}
+  MSG = {"en": ("💨 Windy for spraying", f"Station: {wind:.0f} km/h now (gust {g}) · San Vicente"),
+         "es": ("💨 Viento para pulverizar", f"Estación: {wind:.0f} km/h ahora (ráfaga {g}) · San Vicente")}
   sent = 0
   for uid in uids:
       try: doc = req(f"{FS}/pushSubs/{uid}", tok=tok)
@@ -55,7 +60,7 @@ try:
       title, body = MSG[lang]
       for k, v in subs.items():
           try:
-              webpush(json.loads(v["stringValue"]), json.dumps({"title": title, "body": body, "tag": "sv-wind", "url": "./"}),
+              webpush(json.loads(v["stringValue"]), json.dumps({"title": title, "body": body, "tag": "sv-wind", "url": "./", "sound": "wind-gust.mp3"}),
                       vapid_private_key=VK, vapid_claims={"sub": "mailto:prabath9052@users.noreply.github.com"}, ttl=3600)
               sent += 1
           except WebPushException as e:
