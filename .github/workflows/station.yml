@@ -47,6 +47,7 @@ jobs:
                 echo "reading $now"
                 python3 -u scripts/wind_alert.py || echo "wind alert step failed (continuing)"
                 [ -z "$FORCE_THRESHOLD" ] && { python3 -u scripts/humidity_alert.py || echo "humidity alert step failed (continuing)"; }
+                python3 -u scripts/verify.py || echo "verification step failed (continuing)"
                 python3 -u scripts/fs_sync.py || true
                 last=$now
               fi

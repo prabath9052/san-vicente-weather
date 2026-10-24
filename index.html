@@ -191,6 +191,20 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 .bp-off{display:block;width:100%;margin:0 0 8px;padding:9px 10px;border:0;border-radius:10px;background:#f2b63233;color:inherit;font:inherit;font-size:.86rem;text-align:left;cursor:pointer}
 @media(max-width:600px){.bbtn{width:36px;height:36px;font-size:1.05rem}.bpop{position:fixed;left:10px;right:10px;top:76px;width:auto}}
 .bp-f{position:sticky;bottom:-12px;background:var(--card,#fff);margin-bottom:-12px;padding-bottom:12px}
+</style><style id="vf">.vf-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.vf-bg.on{display:flex}
+.vf-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:760px;width:100%;max-height:90vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
+.vf-box h3{margin:0 30px 6px 0}.vf-sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:10px 0}
+.vf-sum{background:#8881;border-radius:12px;padding:10px 12px}.vf-sh{font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.vf-sum ul{margin:0;padding-left:18px;font-size:.86rem;line-height:1.45}
+.vf-b{display:inline-block;padding:1px 8px;border-radius:9px;font-size:.74rem;font-weight:700;white-space:nowrap}.vf-b.ok{background:#2a8a4a22;color:#1f7a3d}.vf-b.mid{background:#e0a10033;color:#9a6a00}.vf-b.bad{background:#e0322b22;color:#c22a24}.vf-b.na{opacity:.5}
+.vf-ch{margin:8px 0 12px}.vf-ch svg{width:100%;height:190px;display:block}.vf-ch text{font-size:11px;fill:currentColor;opacity:.7}
+.vf-lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;opacity:.85}.vf-lg i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}.vf-lg i.d{height:0;border-top:3px dashed;background:none}
+.vf-days{display:flex;flex-direction:column;gap:6px}.vf-day{background:#8881;border-radius:10px;padding:0 10px}
+.vf-day summary{display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer;list-style:none}.vf-day summary::-webkit-details-marker{display:none}.vf-day summary b{flex:1}
+.vf-dots{display:flex;gap:3px}.vf-dots i{width:9px;height:9px;border-radius:50%;background:#8885}.vf-dots i.ok{background:#2a9a50}.vf-dots i.mid{background:#e0a100}.vf-dots i.bad{background:#e0322b}.vf-sc{font-size:.8rem;opacity:.75;min-width:28px;text-align:right}
+.vf-day table{width:100%;border-collapse:collapse;font-size:.85rem;margin:0 0 10px}.vf-day th{font-size:.74rem;opacity:.7;font-weight:600;text-align:right;padding:3px 4px}
+.vf-day td{padding:5px 4px;border-top:1px solid #8882;text-align:right;white-space:nowrap}.vf-day td:first-child{text-align:left;white-space:normal}.vf-day td small{opacity:.6}
+@media(max-width:600px){.vf-bg{padding:6px}.vf-box{max-height:95vh;padding:16px 12px 12px}.vf-ch svg{height:160px}.vf-day table{font-size:.8rem}.vf-day td,.vf-day th{padding:4px 2px}}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Private station data: read from Firestore 'private/{doc}' after login (no public copy) =====
 (function(){const PUBLIC_FALLBACK=false;
  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
@@ -922,6 +936,57 @@ $('refresh').addEventListener('click',()=>setTimeout(loadLog,500));setInterval(l
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadLog();pushState()}});
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.svPush)setTimeout(loadLog,1500)});
 window.svBell={loadLog,pushState,badge,renderBell};
+})();
+</script>
+<script>// ===== Forecast vs station (daily verification, Firestore private/verification) =====
+(function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',t=(e,s)=>ES()?s:e;
+const P=[['tmax','Max temp','Temp. máx.','°C',1],['tmin','Min temp','Temp. mín.','°C',1],['rain','Rain','Lluvia','mm',1],['wmean','Mean wind','Viento medio','km/h',1],['wmax','Max wind','Viento máx.','km/h',1],['rh','Mean humidity','Humedad media','%',0],['et0','Reference ET₀','ET₀ de referencia','mm',1]];
+const LIM={tmax:[2,4],tmin:[2,4],wmean:[5,10],wmax:[5,10],rh:[10,20],et0:[1,2]};
+function grade(k,f,o){if(f==null||o==null)return'na';if(k==='rain'){const fr=f>=1,or=o>=1;if(fr!==or)return'bad';if(!fr)return'ok';const d=Math.abs(f-o);return d<=3||d<=.3*o?'ok':'mid'}
+ const d=Math.abs(f-o),[a,b]=LIM[k];return d<=a?'ok':d<=b?'mid':'bad'}
+const GL={ok:['Good','Bien'],mid:['Fair','Regular'],bad:['Miss','Falla'],na:['—','—']};
+const fx=(v,n)=>v==null?'—':(+v).toFixed(n),sg=(v,n)=>v==null?'—':(v>0?'+':v<0?'−':'±')+Math.abs(v).toFixed(n);
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+let V=null;
+const modal=document.createElement('div');modal.className='vf-bg';modal.innerHTML='<div class="vf-box" role="dialog" aria-modal="true"><button class="al-x" id="vfX" aria-label="Close">✕</button><div id="vfBody"></div></div>';document.body.appendChild(modal);
+const close=()=>modal.classList.remove('on');$('vfX').onclick=close;modal.onclick=e=>{if(e.target===modal)close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+function summary(days,n){const D=days.slice(-n);if(!D.length)return'';const L=[];
+ const st=k=>{const d=D.map(x=>x.f[k]!=null&&x.o[k]!=null?x.f[k]-x.o[k]:null).filter(x=>x!=null);return{n:d.length,bias:mean(d),mae:mean(d.map(Math.abs))}};
+ const bias=(k,lab,labEs,u,th)=>{const s=st(k);if(!s.n)return'';const b=s.bias,dir=Math.abs(b)<th?t('about right','acertado'):b>0?(k[0]==='t'?t('too warm','demasiado cálido'):t('too high','demasiado alto')):(k[0]==='t'?t('too cool','demasiado frío'):t('too low','demasiado bajo'));
+  return `<li><b>${t(lab,labEs)}</b>: ${t('avg error','error medio')} ${s.mae.toFixed(1)} ${u} · ${Math.abs(b)<th?t('forecast is ','el pronóstico está ')+dir:t('forecast runs ','el pronóstico da ')+Math.abs(b).toFixed(1)+' '+u+' '+dir}</li>`};
+ L.push(bias('tmax','Max temp','Temp. máx.','°C',.5),bias('tmin','Min temp','Temp. mín.','°C',.5),bias('wmean','Mean wind','Viento medio','km/h',1),bias('rh','Humidity','Humedad','%',3),bias('et0','ET₀','ET₀','mm',.3));
+ const hit=D.filter(x=>(x.f.rain>=1)===(x.o.rain>=1)).length,fa=D.filter(x=>x.f.rain>=1&&x.o.rain<1).length,ms=D.filter(x=>x.f.rain<1&&x.o.rain>=1).length;
+ L.push(`<li><b>${t('Rain yes/no','Lluvia sí/no')}</b>: ${t('right on','acertó')} ${hit}/${D.length} ${t('days','días')} (${Math.round(100*hit/D.length)}%)${fa?` · ${fa} ${t('false alarm','falsa alarma')}${fa>1?(ES()?'s':'s'):''}`:''}${ms?` · ${ms} ${t('missed','no prevista')}${ms>1?'s':''}`:''}</li>`);
+ const g=D.flatMap(x=>P.map(p=>grade(p[0],x.f[p[0]],x.o[p[0]]))).filter(x=>x!=='na'),pct=g.length?Math.round(100*g.filter(x=>x==='ok').length/g.length):0;
+ return `<div class="vf-sum"><div class="vf-sh">${t('Last','Últimos')} ${D.length} ${t('days','días')} <span class="vf-b ok">${pct}% ${t('good','bien')}</span></div><ul>${L.join('')}</ul></div>`}
+function chart(days){const D=days.slice(-30);if(D.length<2)return'';const W=640,H=200,pl=30,pr=22,pt=10,pb=24;
+ const vals=D.flatMap(x=>[x.f.tmax,x.o.tmax,x.f.tmin,x.o.tmin]).filter(v=>v!=null),lo=Math.floor(Math.min(...vals)-1),hi=Math.ceil(Math.max(...vals)+1);
+ const X=i=>pl+(W-pl-pr)*i/(D.length-1),Y=v=>pt+(H-pt-pb)*(hi-v)/(hi-lo);
+ const line=(k,s,c,dash)=>`<polyline fill="none" stroke="${c}" stroke-width="2.2" ${dash?'stroke-dasharray="5 4"':''} points="${D.map((x,i)=>x[s][k]==null?'':X(i).toFixed(1)+','+Y(x[s][k]).toFixed(1)).join(' ')}"/>`+D.map((x,i)=>x[s][k]==null?'':`<circle cx="${X(i).toFixed(1)}" cy="${Y(x[s][k]).toFixed(1)}" r="${dash?2.2:3}" fill="${c}"/>`).join('');
+ let grid='';for(let v=Math.ceil(lo/5)*5;v<=hi;v+=5)grid+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#8884"/><text x="${pl-4}" y="${Y(v)+4}" text-anchor="end">${v}°</text>`;
+ const step=Math.ceil(D.length/8);const xl=D.map((x,i)=>i%step&&i!==D.length-1?'':`<text x="${X(i)}" y="${H-6}" text-anchor="middle">${+x.d.slice(8)}/${+x.d.slice(5,7)}</text>`).join('');
+ return `<div class="vf-ch"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${t('Forecast vs observed max/min temperature','Temperatura máx./mín. pronosticada vs observada')}">${grid}${xl}${line('tmax','o','#d9572b')}${line('tmax','f','#d9572b',1)}${line('tmin','o','#2f7fb8')}${line('tmin','f','#2f7fb8',1)}</svg>
+ <div class="vf-lg"><span><i style="background:#d9572b"></i>${t('Max observed','Máx. observada')}</span><span><i class="d" style="border-color:#d9572b"></i>${t('Max forecast','Máx. pronóstico')}</span><span><i style="background:#2f7fb8"></i>${t('Min observed','Mín. observada')}</span><span><i class="d" style="border-color:#2f7fb8"></i>${t('Min forecast','Mín. pronóstico')}</span></div></div>`}
+function dayCard(x){const dt=new Date(x.d+'T12:00:00-03:00').toLocaleDateString(ES()?'es-AR':'en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'America/Argentina/Buenos_Aires'});
+ const rows=P.map(([k,en,es,u,n])=>{const f=x.f[k],o=x.o[k],g=grade(k,f,o);return `<tr><td>${t(en,es)} <small>${u}</small></td><td>${fx(f,n)}</td><td>${fx(o,n)}</td><td>${f==null||o==null?'—':sg(f-o,n)}</td><td><span class="vf-b ${g}">${t(...GL[g])}</span></td></tr>`}).join('');
+ const g=P.map(p=>grade(p[0],x.f[p[0]],x.o[p[0]])),ok=g.filter(v=>v==='ok').length;
+ return `<details class="vf-day"><summary><b>${dt}</b><span class="vf-dots">${g.map(v=>`<i class="${v}"></i>`).join('')}</span><span class="vf-sc">${ok}/${g.filter(v=>v!=='na').length}</span></summary><table><thead><tr><th></th><th>${t('Forecast','Pronóst.')}</th><th>${t('Station','Estación')}</th><th>Δ</th><th></th></tr></thead><tbody>${rows}</tbody></table></details>`}
+function render(){const B=$('vfBody');if(!V){B.innerHTML=`<h3>📊 ${t('Forecast vs station','Pronóstico vs estación')}</h3><p class="al-p">${t('Loading…','Cargando…')}</p>`;return}
+ if(V.err){B.innerHTML=`<h3>📊 ${t('Forecast vs station','Pronóstico vs estación')}</h3><p class="al-w">${t('Could not load the verification data.','No se pudieron cargar los datos de verificación.')} (${V.err})</p>`;return}
+ const D=V.days||[];
+ B.innerHTML=`<h3>📊 ${t('Forecast vs station','Pronóstico vs estación')}</h3><p class="al-p">${t('Each day the forecast issued the day before (1 day ahead, median of the app’s models) is compared with what the Fondomonte station measured.','Cada día se compara el pronóstico emitido el día anterior (1 día de anticipación, mediana de los modelos de la app) con lo que midió la estación Fondomonte.')}</p>
+ <div class="vf-sums">${summary(D,7)}${D.length>7?summary(D,30):''}</div>${chart(D)}
+ <div class="vf-days">${D.slice().reverse().map(dayCard).join('')}</div>
+ <p class="al-i">${t('Badges: temp within 2 °C good / 4 °C fair; wind within 5 / 10 km/h; humidity within 10 / 20 %; ET₀ within 1 / 2 mm; rain good when rain/no rain (≥1 mm) was right and the amount is within 3 mm or 30 %. Updated daily after midnight.','Insignias: temp. dentro de 2 °C bien / 4 °C regular; viento 5 / 10 km/h; humedad 10 / 20 %; ET₀ 1 / 2 mm; lluvia bien si acertó lluvia/no lluvia (≥1 mm) y el monto está dentro de 3 mm o 30 %. Se actualiza cada día después de medianoche.')}</p>`;
+ const f=B.querySelector('.vf-day');if(f)f.open=true}
+async function load(){try{const r=await svFetchPriv('verification','about:blank');if(!r.ok)throw new Error('HTTP '+r.status);V=await r.json()}catch(e){V={err:e.message}}render()}
+window.svVerify=()=>{modal.classList.add('on');render();load()};
+// entry points: station panel button + ⋮ menu
+const g=$('openGraphs');if(g){const b=document.createElement('button');b.type='button';b.className='gbtn';b.id='openVerify';b.innerHTML='📊 <span>Forecast vs station</span>';g.after(b);b.onclick=()=>svVerify()}
+const kp=$('kPop');if(kp){const m=document.createElement('button');m.type='button';m.id='vfBtn';m.className='kitem';m.hidden=!document.body.classList.contains('authed');m.innerHTML='<span>📊</span> <span class="tx">Forecast vs station</span>';kp.querySelector('#themeBtn').after(m);m.onclick=()=>{kp.hidden=true;svVerify()};
+ new MutationObserver(()=>{m.hidden=!document.body.classList.contains('authed')}).observe(document.body,{attributes:true,attributeFilter:['class']})}
+const tx=()=>{const s=ES()?'Pronóstico vs estación':'Forecast vs station';document.querySelectorAll('#openVerify span,#vfBtn .tx').forEach(e=>e.textContent=s);if(modal.classList.contains('on'))render()};
+document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(tx,200)});setTimeout(tx,1500);
 })();
 </script>
 <script type="module">
