@@ -181,6 +181,18 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 @media(max-width:900px) and (min-width:601px){#nowg{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(max-width:600px){#nowg{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}#nowg>div{min-height:100px;padding:10px 34px 10px 12px!important}#nowg>div b{font-size:1.2rem!important}#nowg>div::before{font-size:1.15rem;right:8px}}
 #nowg{grid-auto-rows:1fr!important}
+/* station graphs inline section (Station tab) */
+.sgsec{margin:12px 0;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0001}
+.sgsec .hm.sg-inline{width:100%;max-height:none;height:auto;border-radius:12px;box-shadow:none;overflow:visible}
+.sgsec .hm-h{background:#24577a;padding:12px 16px}
+.sgsec .hm-h h3{font-size:1.15rem;font-weight:700;color:#fff}
+.sgsec .hm-h .s{font-size:.8rem;opacity:.88;margin-top:3px;color:#e6eef5}
+.sgsec #sgX{display:none}
+.sgsec .sg-tog{padding:8px 10px;gap:6px}
+.sgsec .sg-tog button{border-radius:10px;padding:6px 14px;font-size:.85rem;font-weight:600;min-height:34px}
+.sgsec .hm-b{max-height:none;overflow:visible}
+@media(max-width:600px){.sgsec .hm.sg-inline{height:auto}.sgsec .hm-h{padding:10px 12px}.sgsec .hm-h h3{font-size:1.05rem}.sgsec .sg-tog{flex-wrap:nowrap;overflow-x:auto}.sgsec .sg-tog button{flex:1 0 auto;padding:6px 10px}}
+html[data-theme=dark] .sgsec .hm-h{background:#1d4a69}
 </style><style id="al">.al-bg{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:3000;padding:16px}.al-bg.on{display:flex}
 .al-box{position:relative;background:var(--card,#fff);color:var(--fg,#123);border-radius:16px;max-width:440px;width:100%;max-height:85vh;overflow:auto;padding:20px 18px 16px;box-shadow:0 10px 40px #0005}
 .al-box h3{margin:0 28px 8px 0;font-size:1.15rem}.al-x{position:absolute;top:10px;right:10px;border:0;background:none;font-size:1.2rem;cursor:pointer;color:inherit;width:36px;height:36px}
@@ -271,11 +283,12 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 </div></header>
 <main>
 <nav class="tabs" id="tabs" role="tablist"><button role="tab" data-t="fc" class="on"><span class="ti">🗓</span><span>Forecast</span></button><button role="tab" data-t="map"><span class="ti">🗺</span><span>Rain map</span></button><button role="tab" data-t="st"><span class="ti">📡</span><span>Station</span></button></nav>
-<section class="glance sk" id="glance" data-tab="fc st"><b class="gl-h">Today at a glance</b><span id="glBody"></span></section>
+<section class="glance sk" id="glance" data-tab="fc"><b class="gl-h">Today at a glance</b><span id="glBody"></span></section>
 <div id="recBanner" class="rec-b" hidden><div id="recIntro"><span>Your account has no recovery email. Add one so you can reset your password if you forget it.</span> <button type="button" id="recOpen">Add recovery email</button></div>
 <form id="recForm" hidden novalidate><label for="recEmail"><span>Recovery email</span></label><input type="email" id="recEmail" autocomplete="email" autocapitalize="none" maxlength="120"><div id="recPwWrap" hidden><label for="recPw"><span>For security, enter your current password</span></label><input type="password" id="recPw" autocomplete="current-password"></div><div class="rec-btns"><button type="submit" id="recSave">Send verification email</button><button type="button" id="recCancel">Cancel</button></div><div class="ag-err" id="recErr" role="alert" hidden></div></form><div id="recDone" class="ag-ok" hidden></div></div>
 <div class="status" id="status"></div>
 <section class="now" id="now" hidden><h2><span>Now at San Vicente</span><small>· <span>Fondomonte station</span></small><small id="nowUpd"></small><span class="sghint" id="sgHint" hidden>Tap for today's graphs</span></h2><div class="nowg" id="nowg"></div><div class="nowg nowg2" id="nowg2"></div><button type="button" class="gbtn" id="openGraphs">📈 <span>Open station graphs</span></button></section>
+<section class="sgsec" id="stGraphs" data-tab="st" hidden><div class="hm sg-inline"><div class="hm-h"><h3 id="sgTitle"></h3><button id="sgX" aria-label="Close">✕</button></div><div class="sg-tog" role="group" aria-label="Graph range"><button data-r="today">Today</button><button data-r="24h">Last 24 h</button><button data-r="48h" class="on">Last 48 h</button><button data-r="7d">Last 7 days</button></div><div class="hm-b" id="sgBody"></div></div></section>
 <div class="rtog" role="group" aria-label="Forecast length"><button data-n="7" class="on">7 days</button><button data-n="14">Extended <small>(days 8–14)</small></button></div><div class="cards" id="cards"></div><p class="muted" id="rcNote">Days 1–7 rain: “about X mm” = median of the sources (same total used for the hourly popup and map), grey = min–max of the sources; chance = share of Open-Meteo ensemble members (ECMWF 51, GFS 31, GEM 21; every member counted equally) with ≥1 mm that day, or “n/N models” with ≥1 mm when ensemble data is missing.</p><div id="ext" hidden><h3 class="exth" style="margin-top:0">Days 8–14 <span class="tag Low">Extended outlook – low confidence</span></h3><div class="cards" id="cards2"></div><p class="muted">Days 8–14 are based on the Open-Meteo ensembles (ECMWF 51, GFS 31 to ~day 10, GEM 21 members; every member counted equally): median, 10–90% range and the share of members with ≥1 mm. The deterministic models (ECMWF, GFS, GEM to day 9; best match only when it is not a copy of another model) are shown for reference. Rain timing is not shown, models are 3–6-hourly this far out.</p></div>
 <section class="box"><h2>7-day summary</h2><p id="summary">Loading…</p></section>
 <section class="box" id="mapbox"><h2>Precipitation map — hourly &amp; daily (mm)</h2>
@@ -287,7 +300,7 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 <section class="box"><details><summary><b>Per-model detail table</b></summary><div class="scroll" id="detail"></div></details></section>
 <p class="muted">Sources: Open-Meteo (ECMWF, GFS, ICON, GEM, best match + ECMWF 51-member ensemble), MET Norway/Yr, wttr.in. Values are never invented; “—” = no data.</p>
 </main>
-<div class="hm-bg" id="sgBg" role="dialog" aria-modal="true" aria-labelledby="sgTitle"><div class="hm"><div class="hm-h"><h3 id="sgTitle"></h3><button id="sgX" aria-label="Close">✕</button></div><div class="sg-tog" role="group" aria-label="Graph range"><button data-r="today">Today</button><button data-r="24h">Last 24 h</button><button data-r="48h" class="on">Last 48 h</button><button data-r="7d">Last 7 days</button></div><div class="hm-b" id="sgBody"></div></div></div>
+<div class="hm-bg" id="sgBg" hidden></div>
 <div class="hm-bg" id="hmBg" role="dialog" aria-modal="true" aria-labelledby="hmTitle"><div class="hm"><div class="hm-h"><button id="hmPrev" aria-label="Previous">‹</button><h3 id="hmTitle"></h3><button id="hmNext" aria-label="Next day">›</button><button id="hmX" aria-label="Close">✕</button></div><div class="hm-dots" id="hmDots"></div><div class="hm-b" id="hmBody"></div></div></div>
 
 <script>
@@ -708,7 +721,7 @@ let S=null,R='48h';const bg=document.getElementById('sgBg'),box=document.getElem
 const TZO=-3*3600e3,hh=ms=>{const d=new Date(ms+TZO);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
 const dd=ms=>new Date(ms).toLocaleDateString(SV_LANG==='es'?'es-AR':'en-GB',{timeZone:'America/Argentina/Cordoba',weekday:'short',day:'numeric'});
 const fm=(v,d)=>v==null?'—':t((+v).toFixed(d));
-async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
+async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;document.getElementById('stGraphs').hidden=false;render();box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
 function slice(){if(!S)return null;const B=R==='7d'?S.h:S.q;if(!B||!B.v)return null;const now=Date.now();let a=R==='today'?S.midnight:R==='24h'?now-864e5:R==='48h'?now-1728e5:B.t0;
  const xs=[],ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=a-1&&x<=now){xs.push(x);ix.push(i)}}const g=k=>ix.map(i=>(B.v[k]||[])[i]??null);return{xs,step:B.step,g,a:xs.length?xs[0]:a,b:Math.max(now,xs.length?xs[xs.length-1]+B.step:now)}}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -761,7 +774,7 @@ function render(){document.querySelectorAll('.sg-tog button').forEach(b=>b.class
  h+=`<p class="muted sg-note">${n('VPD and Delta T are calculated from air temperature and humidity (Delta T = air temperature − wet-bulb, Stull formula). Sunshine = minutes with global radiation ≥ 40 % of clear-sky radiation (sun above 3°), a ratio estimate of WMO sunshine. ET0 = ASCE standardized (FAO-56 Penman-Monteith, short-step) reference evapotranspiration calculated from the station data, accumulated since midnight. The station has no battery or solar panel voltage channels, so soil temperature and leaf wetness are shown instead.')}</p>`;
  body.innerHTML=h}
 
-function open(){if(!S)return;render();bg.classList.add('on');document.body.style.overflow='hidden';body.scrollTop=0;document.getElementById('sgX').focus()}
+function open(){if(!S)return;render();document.getElementById('stGraphs').scrollIntoView({behavior:'smooth',block:'start'})}
 function close(){bg.classList.remove('on');document.body.style.overflow=''}
 box.tabIndex=0;box.setAttribute('role','button');box.addEventListener('click',open);box.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}});
 document.getElementById('sgX').onclick=close;bg.addEventListener('click',e=>{if(e.target===bg)close()});
@@ -831,7 +844,7 @@ new MutationObserver(arrange).observe($('nowg'),{childList:true});
 $('openGraphs').addEventListener('click',e=>{e.stopPropagation();$('now').click()});
 window.addEventListener('svstation',()=>{arrange();hero();glance()});
 // --- tabs ---
-function tagMain(){[...document.querySelector('main').children].forEach(n=>{if(n.dataset.tab||n.id==='tabs'||n.id==='recBanner')return;n.dataset.tab=n.id==='now'?'st':n.id==='mapbox'?'map':n.id==='status'?'fc st':'fc'})}
+function tagMain(){[...document.querySelector('main').children].forEach(n=>{if(n.dataset.tab||n.id==='tabs'||n.id==='recBanner')return;n.dataset.tab=n.id==='now'?'st':n.id==='mapbox'?'map':n.id==='status'?'fc':'fc'})}
 function setTab(t){tagMain();document.body.dataset.tab=t;localStorage.setItem('svTab',t);document.querySelectorAll('#tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.setAttribute('aria-selected',b.dataset.t===t)});
  if(t==='map'&&window.SVMAP)setTimeout(()=>{SVMAP.invalidateSize()},50);if(innerWidth<=600)scrollTo({top:0})}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));setTab(localStorage.getItem('svTab')||'fc');
