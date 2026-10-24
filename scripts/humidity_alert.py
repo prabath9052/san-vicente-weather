@@ -78,6 +78,9 @@ try:
           req(f"{FS}/pushSubs/{uid}?updateMask.fieldPaths=subs", {"fields": {"subs": {"mapValue": {"fields": keep}}}}, tok=tok, method="PATCH")
           print(uid[:6], "removed", len(dead), "expired")
   print("sent", sent, "to", len(uids), "users")
+  if sent and not only and not os.environ.get("SIM_NOW") and not os.environ.get("SIM_RH"):
+      sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from alert_log import log_alert
+      log_alert(state["checked"], "humidity", rh, f"Station: {rh:.0f}% now (above 50%)", f"Estación: {rh:.0f}% ahora (sobre 50%)", None, st.get("observed"))
 except Exception as e:
   print("send failed:", type(e).__name__, getattr(e, "code", ""))
   state["alerting"] = False; state.pop("lastSent", None); save(); sys.exit(1)

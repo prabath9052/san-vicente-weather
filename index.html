@@ -176,6 +176,21 @@ html[data-theme=dark] .sg-tog button,html[data-theme=dark] .hm-dots span{backgro
 .adm-l{display:flex;flex-direction:column;gap:6px}.adm-h,.adm-r{display:grid;grid-template-columns:minmax(0,1fr) 46px 72px 52px;gap:6px;align-items:center;gap:8px;}.adm-h{font-size:.78rem;opacity:.7;padding:0 12px}.adm-h span:nth-child(2),.adm-h span:nth-child(3),.adm-c{text-align:center}.adm-c{cursor:pointer}.adm-r{padding:10px 12px;border-radius:10px;background:#8881;cursor:pointer}.adm-u{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis}.adm-d{font-size:.74rem;opacity:.7;text-align:right;line-height:1.1}
 
 .al-adm{display:block;width:100%;margin:14px 0 0;padding:11px 12px;border:0;border-radius:10px;background:#2f7fb8;color:#fff;font:inherit;font-weight:600;cursor:pointer;text-align:left}.al-back{background:#8883;color:inherit}.adm-c{display:flex;align-items:center;justify-content:center;gap:2px}.adm-c i{font-style:normal;font-size:.8rem}@media(max-width:480px){.al-bg{padding:8px}.al-box{max-height:92vh}}
+
+.bmenu{position:relative}.bbtn{position:relative;width:40px;height:40px;border-radius:50%;padding:0;border:0;background:#ffffff33;color:#fff;font-size:1.2rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.bbtn.off .bi{filter:grayscale(1);opacity:.6}.bbtn.off .bsl{position:absolute;width:26px;height:2.5px;background:#fff;transform:rotate(-45deg);border-radius:2px;box-shadow:0 0 0 1px #0003}
+.bdg{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e0322b;color:#fff;font-size:.7rem;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px #fff6}
+.bbtn.ring .bi{animation:svring .9s ease 2}.bbtn.ring .bdg{animation:svpop .5s ease}
+@keyframes svring{0%,100%{transform:rotate(0)}15%{transform:rotate(18deg)}30%{transform:rotate(-16deg)}45%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}75%{transform:rotate(4deg)}}
+@keyframes svpop{0%{transform:scale(.3)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.bpop{position:absolute;right:-50px;top:48px;width:min(360px,calc(100vw - 20px));max-height:min(70vh,520px);overflow:auto;background:var(--card,#fff);color:var(--fg,#123);border-radius:14px;box-shadow:0 8px 28px #0005;padding:12px;z-index:1250;text-align:left}
+.bp-h{font-weight:700;margin:0 0 8px}.bl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.bl li{display:flex;gap:10px;padding:8px 10px;border-radius:10px;background:#8881}.bl li.nw{background:#2f7fb81f;box-shadow:inset 3px 0 0 #2f7fb8}
+.bl-i{font-size:1.3rem;line-height:1.2}.bl-t{display:flex;flex-direction:column;gap:1px;font-size:.88rem;min-width:0}.bl-t small{opacity:.7;font-size:.76rem}.bl-e{opacity:.7;font-size:.9rem}
+.bp-f{display:flex;flex-direction:column;gap:6px;margin-top:10px;border-top:1px solid #8883;padding-top:10px}.bp-f .kitem{text-align:left}
+.bp-off{display:block;width:100%;margin:0 0 8px;padding:9px 10px;border:0;border-radius:10px;background:#f2b63233;color:inherit;font:inherit;font-size:.86rem;text-align:left;cursor:pointer}
+@media(max-width:600px){.bbtn{width:36px;height:36px;font-size:1.05rem}.bpop{position:fixed;left:10px;right:10px;top:76px;width:auto}}
+.bp-f{position:sticky;bottom:-12px;background:var(--card,#fff);margin-bottom:-12px;padding-bottom:12px}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="https://prabath9052.github.io/san-vicente-weather/manifest.webmanifest"><link rel="icon" href="https://prabath9052.github.io/san-vicente-weather/favicon.ico"><link rel="apple-touch-icon" href="https://prabath9052.github.io/san-vicente-weather/apple-touch-icon.png"><meta name="theme-color" content="#24577a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SV Weather"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head><body>
@@ -829,7 +844,7 @@ const close=()=>modal.classList.remove('on');$('alX').onclick=close;modal.onclic
 const F=()=>window.svFs,D=()=>window.svDb;
 async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return (s.exists()&&(s.data().wind===true||s.data().humidity===true))||(U===ADMIN&&!(s.exists()&&s.data().humidity===false))}catch(e){return null}}
 async function curSub(){if(!SUP)return null;const r=REG||await navigator.serviceWorker.ready;return r.pushManager.getSubscription()}
-async function renderAl(msg){const B=$('alBody');const nom=await nominated();const sub=await curSub().catch(()=>null);const on=!!sub&&Notification.permission==='granted';
+async function renderAl(msg){window.svBell&&setTimeout(()=>svBell.pushState(),0);const B=$('alBody');const nom=await nominated();const sub=await curSub().catch(()=>null);const on=!!sub&&Notification.permission==='granted';
  let st=!SUP?(IOS&&!STANDALONE?t('On iPhone/iPad, first add this app to your Home Screen (Share ▸ Add to Home Screen, iOS 16.4+), then open it from there.','En iPhone/iPad, primero agregá la app a la pantalla de inicio (Compartir ▸ Agregar a inicio, iOS 16.4+) y abrila desde ahí.'):t('This browser does not support push notifications.','Este navegador no admite notificaciones push.'))
   :Notification.permission==='denied'?t('Notifications are blocked for this site in your browser settings.','Las notificaciones están bloqueadas para este sitio en la configuración del navegador.'):'';
  B.innerHTML=`<h3>🔔 ${t('Wind alerts','Alertas de viento')}</h3><p class="al-p">${t('Get a phone notification when the station’s current average wind goes above 15 km/h (windy for spraying), and/or when station humidity goes above 50% at night (18:00–06:00) — whichever the admin assigned you.','Recibí una notificación cuando el viento medio actual de la estación supere 15 km/h (viento para pulverizar) y/o cuando la humedad de la estación supere 50% de noche (18:00–06:00), según lo que te asigne el administrador.')}</p>
@@ -856,11 +871,40 @@ bAl.onclick=()=>{kp.hidden=true;modal.classList.add('on');renderAl()};bAdm.oncli
 window.svAlerts={renderAl,renderAdm};
 const tx=()=>{bAl.querySelector('.tx').textContent=t('Wind & humidity alerts','Alertas de viento y humedad');bAdm.querySelector('.tx').textContent=t('Alert recipients (admin)','Destinatarios de alertas (admin)')};
 kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(tx,200)});
-const w=setInterval(()=>{if(!window.svAuth||!window.svAuthMod)return;clearInterval(w);svAuthMod.onAuthStateChanged(svAuth,async u=>{UID=u?u.uid:null;U=null;bAl.hidden=!u;bAdm.hidden=true;if(!u)return;tx();
+const w=setInterval(()=>{if(!window.svAuth||!window.svAuthMod)return;clearInterval(w);svAuthMod.onAuthStateChanged(svAuth,async u=>{UID=u?u.uid:null;U=null;bAl.hidden=!u;bell.hidden=!u;if(u){loadLog();pushState()}else bp.hidden=true;bAdm.hidden=true;if(!u)return;tx();
  try{const q=await F().getDocs(F().query(F().collection(D(),'usernames'),F().where('authUid','==',u.uid)));q.forEach(d=>U=d.id)}catch(e){}
  try{const a=await F().getDoc(F().doc(D(),'usernames',ADMIN));if(a.exists()&&a.data().authUid===u.uid)U=ADMIN}catch(e){}
  window.SV_ISADMIN=U===ADMIN;bAdm.hidden=!window.SV_ISADMIN;
  const s=await curSub().catch(()=>null);if(s&&Notification.permission==='granted')save(s).catch(()=>{})})},300);
+
+// ===== Notification bell: alert history + unread badge =====
+const LOGURL='https://prabath9052.github.io/san-vicente-weather/data/alerts-log.json',SEEN='svBellSeen';
+const bell=document.createElement('div');bell.className='bmenu';bell.hidden=true;
+bell.innerHTML='<button type="button" id="bellBtn" class="bbtn" aria-label="Alerts" aria-haspopup="true" aria-expanded="false"><span class="bi" aria-hidden="true">🔔</span><span class="bsl" aria-hidden="true"></span><span class="bdg" id="bellDg" hidden>0</span></button><div class="bpop" id="bellPop" hidden></div>';
+$('refresh').before(bell);const bb=$('bellBtn'),bp=$('bellPop');let LOG=[],PUSHON=null,LASTN=null;
+const ts=x=>Date.parse(x)||0,seen=()=>+localStorage.getItem(SEEN)||0;
+const ago=ms=>{const m=Math.round(ms/6e4);if(m<1)return t('just now','recién');if(m<60)return t(m+' min ago','hace '+m+' min');const h=Math.round(m/60);if(h<24)return t(h+' h ago','hace '+h+' h');const d=Math.round(h/24);return t(d+' d ago','hace '+d+' d')};
+const loc=x=>new Date(ts(x)).toLocaleString(ES()?'es-AR':'en-GB',{timeZone:'America/Argentina/Buenos_Aires',weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+function badge(anim){const n=LOG.filter(a=>ts(a.time)>seen()).length,d=$('bellDg');d.hidden=!n;d.textContent=n>9?'9+':n;
+ bb.classList.toggle('off',PUSHON===false);bb.title=PUSHON===false?t('Alerts are off on this device','Alertas desactivadas en este dispositivo'):t('Alerts','Alertas');
+ if(anim){bb.classList.remove('ring');void bb.offsetWidth;bb.classList.add('ring')}}
+async function loadLog(){try{const r=await fetch(LOGURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const a=await r.json();if(!Array.isArray(a))return;
+ const newest=a.length?ts(a[0].time):0,grew=LASTN!==null&&newest>LASTN;LOG=a;LASTN=newest;badge(grew);if(!bp.hidden)renderBell()}catch(e){}}
+async function pushState(){try{const s=await curSub();PUSHON=!!s&&Notification.permission==='granted'}catch(e){PUSHON=false}if(!SUP)PUSHON=false;badge()}
+function renderBell(){const sn=seen();
+ const items=LOG.slice(0,30).map(a=>{const w=a.type==='wind',nw=ts(a.time)>sn;return `<li class="${nw?'nw':''}"><span class="bl-i">${w?'💨':'💧'}</span><span class="bl-t"><b>${w?t('Windy for spraying','Viento para pulverizar'):t('Humidity alert','Alerta de humedad')}</b><span>${ES()?(a.textEs||a.text):a.text}</span><small>${ago(Date.now()-ts(a.time))} · ${loc(a.time)}</small></span></li>`}).join('');
+ bp.innerHTML=`<div class="bp-h">🔔 ${t('Recent alerts','Alertas recientes')}</div>${PUSHON===false?`<button type="button" class="bp-off" id="bpEn">🔕 ${t('Notifications are off on this device — tap to turn them on','Las notificaciones están desactivadas en este dispositivo: tocá para activarlas')}</button>`:''}<ul class="bl">${items||`<li class="bl-e">${t('No alerts yet.','Todavía no hay alertas.')}</li>`}</ul>
+ <div class="bp-f"><button type="button" class="kitem" id="bpSet">🔔 ${t('Wind & humidity alerts','Alertas de viento y humedad')}</button>${window.SV_ISADMIN?`<button type="button" class="kitem" id="bpAdm">👥 ${t('Alert recipients (admin)','Destinatarios de alertas (admin)')}</button>`:''}</div>`;
+ const go=f=>()=>{bp.hidden=true;bb.setAttribute('aria-expanded','false');modal.classList.add('on');f()};
+ $('bpSet').onclick=go(()=>renderAl());const a=$('bpAdm');if(a)a.onclick=go(()=>renderAdm());const e=$('bpEn');if(e)e.onclick=go(()=>renderAl())}
+bb.onclick=e=>{e.stopPropagation();kp.hidden=true;if(bp.hidden){renderBell();bp.hidden=false;bb.setAttribute('aria-expanded','true');localStorage.setItem(SEEN,LOG.length?Math.max(ts(LOG[0].time),Date.now()):Date.now());badge()}else{bp.hidden=true;bb.setAttribute('aria-expanded','false')}};
+bp.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',()=>{if(!bp.hidden){bp.hidden=true;bb.setAttribute('aria-expanded','false')}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!bp.hidden)bp.hidden=true});
+kp.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(()=>{badge();if(!bp.hidden)renderBell()},200)});
+$('refresh').addEventListener('click',()=>setTimeout(loadLog,500));setInterval(loadLog,2*60e3);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadLog();pushState()}});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.svPush)setTimeout(loadLog,1500)});
+window.svBell={loadLog,pushState,badge,renderBell};
 })();
 </script>
 <script type="module">

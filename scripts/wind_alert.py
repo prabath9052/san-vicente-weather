@@ -72,6 +72,9 @@ try:
           req(f"{FS}/pushSubs/{uid}?updateMask.fieldPaths=subs", {"fields": {"subs": {"mapValue": {"fields": keep}}}}, tok=tok, method="PATCH")
           print(uid[:6], "removed", len(dead), "expired")
   print("sent", sent, "to", len(uids), "users")
+  if sent and not force:
+      sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from alert_log import log_alert
+      log_alert(now, "wind", wind, f"Station: {wind:.0f} km/h now (gust {g})", f"Estación: {wind:.0f} km/h ahora (ráfaga {g})", gust, st.get("observed"))
 
 except Exception as e:
   print("send failed:", type(e).__name__, getattr(e, "code", ""))
