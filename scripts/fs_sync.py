@@ -8,7 +8,7 @@ KEY = "AIzaSyD2kxZAxQw2Ux46PVBSI6HsuD0-Pc1ko0I"
 FS = "https://firestore.googleapis.com/v1/projects/san-vicente-weather/databases/(default)/documents"
 DOCS = {"station": "data/station.json", "stationSeries": "data/station-series.json", "alertsLog": "data/alerts-log.json",
         "windState": "data/wind-alert-state.json", "humidityState": "data/humidity-alert-state.json",
-        "verification": "data/verification.json"}
+        "verification": "data/verification.json", "etoState": "data/eto-state.json"}
 TMP = os.environ.get("RUNNER_TEMP", "/tmp"); HC = os.path.join(TMP, "fs_sync_hashes.json")
 def req(url, data=None, tok=None, method=None):
     h = {"Content-Type": "application/json"}
@@ -21,6 +21,7 @@ def main():
     todo = {}
     for name, path in DOCS.items():
         if not os.path.exists(path): continue
+        if os.environ.get("ONLY_DOCS") and name not in os.environ["ONLY_DOCS"].split(","): continue
         raw = open(path, encoding="utf-8").read(); h = hashlib.sha1(raw.encode()).hexdigest()
         if hc.get(name) != h: todo[name] = (raw, h)
     if not todo: print("fs_sync: nothing changed"); return

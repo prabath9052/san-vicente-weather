@@ -1,0 +1,41 @@
+name: Daily ET0 alert (08:00 Argentina)
+# 08:00 local = 11:00 UTC. GitHub cron runs late, so an early run (10:40 UTC) waits until 08:00 then sends;
+# backup runs later in the morning. Own concurrency group (the station group's pending slot would cancel it). private/etoState.lastSentDate makes it send exactly once per day.
+on:
+  schedule:
+    - cron: '40 10 * * *'
+    - cron: '20 11 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'TEST: send ONE message to prabath9052 only (no state, no log)'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: eto
+  cancel-in-progress: false
+jobs:
+  eto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: pip install -q pywebpush
+      - name: Fetch latest station data, send ET0, save state
+        env:
+          HOBOLINK_API_TOKEN: ${{ secrets.HOBOLINK_API_TOKEN }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          FB_BOT_EMAIL: ${{ secrets.FB_BOT_EMAIL }}
+          FB_BOT_PASSWORD: ${{ secrets.FB_BOT_PASSWORD }}
+          TEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test == 'true' && '1' || '' }}
+          WAIT_UNTIL_8: '1'
+        run: |
+          python3 -u scripts/fs_pull.py
+          python3 -u scripts/fetch_station.py || echo "station fetch failed (using stored data)"
+          python3 -u scripts/eto_daily.py
+          [ -z "$TEST" ] && ONLY_DOCS=etoState,alertsLog python3 -u scripts/fs_sync.py || true

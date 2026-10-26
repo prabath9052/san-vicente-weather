@@ -6,3 +6,4 @@ data/alerts-log.json
 data/wind-alert-state.json
 data/humidity-alert-state.json
 data/verification.json
+data/eto-state.json
