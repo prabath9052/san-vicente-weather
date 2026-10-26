@@ -57,6 +57,12 @@ tok = req(f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPasswor
           {"email": os.environ["FB_BOT_EMAIL"], "password": os.environ["FB_BOT_PASSWORD"], "returnSecureToken": True})["idToken"]
 VK = Vapid01.from_pem(os.environ["VAPID_PRIVATE_KEY"].encode())
 adm = req(FS + "/usernames/prabath9052").get("fields", {}).get("authUid", {}).get("stringValue")
+if not TEST:  # re-check shared state right before sending (another run may have sent meanwhile)
+    try:
+        raw = req(f"{FS}/private/etoState", tok=tok).get("fields", {}).get("json", {}).get("stringValue")
+        if raw and json.loads(raw).get("lastSentDate") == ys: print("already sent for", ys, "(Firestore)"); sys.exit(0)
+    except urllib.error.HTTPError as e:
+        if e.code != 404: print("etoState check failed HTTP", e.code, "; not sending"); sys.exit(1)
 if TEST: uids = [adm] if adm else []
 else:
     noms = req(FS + "/alertNominees?pageSize=300", tok=tok).get("documents", [])

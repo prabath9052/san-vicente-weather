@@ -1,12 +1,13 @@
 name: Daily ET0 alert (08:00 Argentina)
-# 08:00 local = 11:00 UTC. GitHub cron runs late, so an early run (10:40 UTC) waits until 08:00 then sends;
+# 08:00 local = 11:00 UTC. GitHub cron runs late, so early runs (07:00 / 07:25 local) sleep until 08:00, refresh station data, then send;
 # backup runs later in the morning. Own concurrency group (the station group's pending slot would cancel it). private/etoState.lastSentDate makes it send exactly once per day.
 on:
   schedule:
-    - cron: '40 10 * * *'
-    - cron: '20 11 * * *'
-    - cron: '0 12 * * *'
-    - cron: '0 13 * * *'
+    - cron: '0 10 * * *'    # 07:00 local: waits until 08:00, then sends
+    - cron: '25 10 * * *'   # 07:25 local: backup early run (queued behind the first; skips if already sent)
+    - cron: '20 11 * * *'   # 08:20 local: late backups
+    - cron: '0 12 * * *'    # 09:00 local
+    - cron: '0 13 * * *'    # 10:00 local
   workflow_dispatch:
     inputs:
       test:
@@ -21,11 +22,17 @@ concurrency:
 jobs:
   eto:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Install
         run: pip install -q pywebpush
+      - name: Wait until 08:00 local (11:00 UTC)
+        if: github.event_name == 'schedule'
+        run: |
+          T=$(date -u -d 'today 11:00' +%s); N=$(date -u +%s)
+          if [ $N -lt $T ] && [ $((T-N)) -le 4800 ]; then echo "sleeping $((T-N)) s"; while [ $(date -u +%s) -lt $T ]; do sleep 20; done; fi
+          date -u
       - name: Fetch latest station data, send ET0, save state
         env:
           HOBOLINK_API_TOKEN: ${{ secrets.HOBOLINK_API_TOKEN }}
@@ -33,7 +40,6 @@ jobs:
           FB_BOT_EMAIL: ${{ secrets.FB_BOT_EMAIL }}
           FB_BOT_PASSWORD: ${{ secrets.FB_BOT_PASSWORD }}
           TEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test == 'true' && '1' || '' }}
-          WAIT_UNTIL_8: '1'
         run: |
           python3 -u scripts/fs_pull.py
           python3 -u scripts/fetch_station.py || echo "station fetch failed (using stored data)"
