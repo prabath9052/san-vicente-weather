@@ -7,10 +7,11 @@ service cloud.firestore {
     }
     function isBot() { return request.auth != null && request.auth.uid == '6EG61Ugx0vb2G3AOVFPsh0XUZoh1'; }
 
-    // usernames: ORIGINAL published block (not reproduced verbatim here; the live rules are the source of truth).
-    // Summary of what is live: public read; a signed-in user can create; the owner can update/delete.
+    // usernames: ID -> email lookup for login. A-01 (2026-10-26): single-doc get by exact ID stays public
+    // (login before sign-in needs it); listing/bulk read is limited to the admin, or a signed-in user's own doc.
     match /usernames/{id} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAdmin() || (request.auth != null && resource.data.authUid == request.auth.uid);
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && resource.data.authUid == request.auth.uid;
     }
