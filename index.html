@@ -853,7 +853,6 @@ function arrange(){const g=$('nowg'),g2=$('nowg2');const kids=[...g.children];if
  if(kids.every((n,i)=>n.dataset.k===order[i])&&!kids.some(n=>n.classList.contains('big')))return;
  kids.forEach(n=>n.classList.remove('big'));order.forEach(k=>{const n=kids.find(x=>x.dataset.k===k);if(n)g.appendChild(n)});}
 new MutationObserver(arrange).observe($('nowg'),{childList:true});
-$('openGraphs')?.addEventListener('click',e=>{e.stopPropagation();$('now').click()});
 window.addEventListener('svstation',()=>{arrange();hero();glance()});
 // --- tabs ---
 function tagMain(){[...document.querySelector('main').children].forEach(n=>{if(n.dataset.tab||n.id==='tabs'||n.id==='recBanner')return;n.dataset.tab=n.id==='now'?'st':n.id==='mapbox'?'map':n.id==='status'?'fc':'fc'})}
@@ -922,7 +921,7 @@ const bAdm=mk('admBtn','<span>👥</span> <span class="tx">Alert recipients (adm
 const modal=document.createElement('div');modal.className='al-bg';modal.id='alBg';modal.innerHTML='<div class="al-box" role="dialog" aria-modal="true"><button class="al-x" id="alX" aria-label="Close">✕</button><div id="alBody"></div></div>';document.body.appendChild(modal);
 const close=()=>modal.classList.remove('on');$('alX').onclick=close;modal.onclick=e=>{if(e.target===modal)close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 const F=()=>window.svFs,D=()=>window.svDb;
-async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return (s.exists()&&(s.data().wind===true||s.data().humidity===true||s.data().eto===true))||(U===ADMIN&&!(s.exists()&&s.data().eto===false))||(U===ADMIN&&!(s.exists()&&s.data().humidity===false))}catch(e){return null}}
+async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return (s.exists()&&(s.data().wind===true||s.data().humidity===true||s.data().eto===true))||(U===ADMIN&&!(s.exists()&&s.data().eto===false&&s.data().humidity===false))}catch(e){return null}}
 async function curSub(){if(!SUP)return null;const r=REG||await navigator.serviceWorker.ready;return r.pushManager.getSubscription()}
 async function renderAl(msg){window.svBell&&setTimeout(()=>svBell.pushState(),0);const B=$('alBody');const nom=await nominated();const sub=await curSub().catch(()=>null);const on=!!sub&&Notification.permission==='granted';
  let st=!SUP?(IOS&&!STANDALONE?t('On iPhone/iPad, first add this app to your Home Screen (Share ▸ Add to Home Screen, iOS 16.4+), then open it from there.','En iPhone/iPad, primero agregá la app a la pantalla de inicio (Compartir ▸ Agregar a inicio, iOS 16.4+) y abrila desde ahí.'):t('This browser does not support push notifications.','Este navegador no admite notificaciones push.'))
@@ -1072,7 +1071,7 @@ window.svVerify=()=>{modal.classList.add('on');render();load()};
 // entry points: ⋮ menu
 const kp=$('kPop');if(kp){const m=document.createElement('button');m.type='button';m.id='vfBtn';m.className='kitem';m.hidden=!document.body.classList.contains('authed');m.innerHTML='<span>📊</span> <span class="tx">Forecast vs station</span>';kp.querySelector('#themeBtn').after(m);m.onclick=()=>{kp.hidden=true;svVerify()};
  new MutationObserver(()=>{m.hidden=!document.body.classList.contains('authed')}).observe(document.body,{attributes:true,attributeFilter:['class']})}
-const tx=()=>{const s=ES()?'Pronóstico vs estación':'Forecast vs station';document.querySelectorAll('#openVerify span,#vfBtn .tx').forEach(e=>e.textContent=s);if(modal.classList.contains('on'))render()};
+const tx=()=>{const s=ES()?'Pronóstico vs estación':'Forecast vs station';document.querySelectorAll('#vfBtn .tx').forEach(e=>e.textContent=s);if(modal.classList.contains('on'))render()};
 document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(tx,200)});setTimeout(tx,1500);
 })();
 </script>

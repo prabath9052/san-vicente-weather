@@ -70,13 +70,15 @@ SER = {"t": ("20530638-1", "avg", 1), "st": ("20496238-1", "avg", 1), "rh": ("20
        "wd": ("21796781-3", "vec", 0), "r": ("10704900-1", "sum", 1), "lw": ("20851391-1", "avg", 0),
        "sr": ("20530536-1", "avg", 0), "tn": ("20530638-1", "min", 1), "tx": ("20530638-1", "max", 1)}
 # ---- derived series (documented in README-style comments):
-# ss  = sunshine duration, minutes per bucket (WMO: time with global radiation >= 120 W/m2),
-#       counted from the raw logger records: each raw record >= 120 W/m2 adds its logging
-#       interval (gap to previous record, capped at 15 min).
+# ss  = sunshine duration, minutes per bucket: counted from the raw logger records; each raw record
+#       with global radiation >= 40 % of clear-sky global radiation (sun > 3 deg; see sun_raw) adds its
+#       logging interval (gap to previous record, capped at 15 min). Approximates WMO 120 W/m2 direct beam.
 # e0  = reference evapotranspiration ET0 (FAO-56 Penman-Monteith, hourly/short-step form,
 #       eq. 53), accumulated since local midnight (mm). Uses bucket air temp, RH, wind
 #       (anemometer treated as 2 m), solar radiation; Rn from Rs (albedo 0.23) and FAO-56
-#       net longwave with Rs/Rso; G = 0.1 Rn by day, 0.5 Rn by night; elevation 399 m.
+#       net longwave with Rs/Rso; G = 0.04 Rn by day, 0.2 Rn by night (ASCE tall/alfalfa-reference
+#       soil heat factors) with short-reference Cd 0.24/0.96; elevation 399 m. Gives ~5 % above textbook
+#       grass ET0 and matches the station's own ET0 (audit A-03, decision on hold).
 LAT, ELEV = -31.8506, 399.0
 def ghi_cs(ts_ms):
     """clear-sky global irradiance (W/m2) at the middle of the 5-min record ending ts_ms; 0 if sun < 3 deg"""
@@ -119,7 +121,7 @@ def et0_series(t0, step, n, v, last_frac=1.0):
         if Rso > 0.01 * hrs: ratio = min(1.0, Rs / Rso)
         es = 0.6108 * math.exp(17.27 * T / (T + 237.3)); ea = es * RH / 100
         Rnl = 4.903e-9 / 24 * hrs * (T + 273.16) ** 4 * (0.34 - 0.14 * math.sqrt(max(ea, 0))) * (1.35 * ratio - 0.35)
-        Rn = 0.77 * Rs - Rnl; G = (0.04 if Ra > 0 else 0.2) * Rn; cd = 0.24 if Ra > 0 else 0.96  # ASCE-EWRI standardized short reference
+        Rn = 0.77 * Rs - Rnl; G = (0.04 if Ra > 0 else 0.2) * Rn; cd = 0.24 if Ra > 0 else 0.96  # G: tall-reference factors, Cd: short reference (see e0 note above)
         D = 4098 * es / (T + 237.3) ** 2
         e = (0.408 * D * (Rn - G) + gam * (37 * hrs) / (T + 273) * U * (es - ea)) / (D + gam * (1 + cd * U))
         if i == n - 1: e *= last_frac  # A-04: unfinished last interval counts only its elapsed part
