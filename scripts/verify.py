@@ -32,13 +32,18 @@ def obs_day(H, d):
             "rh": r1(stt.mean(g("rh")), 0) if g("rh") else None, "et0": r1(max(g("e0")), 2) if g("e0") else None, "hours": len(rows)}
 def fc_days(d0, d1):
     q = (f"https://previous-runs-api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&timezone=America%2FArgentina%2FBuenos_Aires"
-         f"&wind_speed_unit=kmh&start_date={d0}&end_date={d1}&hourly=" + ",".join(v + "_previous_day1" for v in VARS) + "&models=" + ",".join(MODELS))
+         f"&wind_speed_unit=kmh&start_date={d0}&end_date={(dt.date.fromisoformat(d1) + dt.timedelta(days=1)).isoformat()}&hourly=" + ",".join(v + "_previous_day1" for v in VARS) + "&models=" + ",".join(MODELS))
     h = json.load(urllib.request.urlopen(q, timeout=60))["hourly"]; T = h["time"]; out = {}
     for day in sorted({t[:10] for t in T}):
-        idx = [i for i, t in enumerate(T) if t.startswith(day)]; per = {k: [] for k in ["tmax", "tmin", "rain", "wmean", "wmax", "rh", "et0"]}
+        idx = [i for i, t in enumerate(T) if t.startswith(day)]
+        # A-06: Open-Meteo hourly rain/ET0 refer to the PRECEDING hour, so the local day's total is hours 01:00..24:00 (next day 00:00)
+        nxt = (dt.date.fromisoformat(day) + dt.timedelta(days=1)).isoformat() + "T00:00"
+        ids = [i for i, t in enumerate(T) if (t.startswith(day) and not t.endswith("T00:00")) or t == nxt]; per = {k: [] for k in ["tmax", "tmin", "rain", "wmean", "wmax", "rh", "et0"]}
         for m in MODELS:
             col = lambda v: [h[f"{v}_previous_day1_{m}"][i] for i in idx if h.get(f"{v}_previous_day1_{m}") and h[f"{v}_previous_day1_{m}"][i] is not None]
-            t, p, w, rh, e = col("temperature_2m"), col("precipitation"), col("wind_speed_10m"), col("relative_humidity_2m"), col("et0_fao_evapotranspiration")
+            t, w, rh = col("temperature_2m"), col("wind_speed_10m"), col("relative_humidity_2m")
+            sm = lambda v: [h[f"{v}_previous_day1_{m}"][i] for i in ids if h.get(f"{v}_previous_day1_{m}") and h[f"{v}_previous_day1_{m}"][i] is not None]
+            p, e = sm("precipitation"), sm("et0_fao_evapotranspiration")
             if len(t) < 22: continue
             per["tmax"].append(max(t)); per["tmin"].append(min(t)); per["rain"].append(sum(p))
             if w: w = [x * W2M for x in w]; per["wmean"].append(stt.mean(w)); per["wmax"].append(max(w))
