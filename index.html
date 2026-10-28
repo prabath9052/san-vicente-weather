@@ -984,7 +984,7 @@ window.svBell={loadLog,pushState,badge,renderBell};
 </script>
 <script>// ===== Forecast vs station (daily verification, Firestore private/verification) =====
 (function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',t=(e,s)=>ES()?s:e;
-const P=[['tmax','Max temp','Temp. máx.','°C',1],['tmin','Min temp','Temp. mín.','°C',1],['rain','Rain','Lluvia','mm',1],['wmean','Mean wind','Viento medio','km/h',1],['wmax','Max wind','Viento máx.','km/h',1],['rh','Mean humidity','Humedad media','%',0],['et0','Reference ET₀','ET₀ de referencia','mm',1]];
+const P=[['tmax','Max temp','Temp. máx.','°C',1],['tmin','Min temp','Temp. mín.','°C',1],['rain','Rain','Lluvia','mm',1],['wmean','Mean wind (forecast adjusted to 2 m)','Viento medio (pronóstico ajustado a 2 m)','km/h',1],['wmax','Max wind (forecast adjusted to 2 m)','Viento máx. (pronóstico ajustado a 2 m)','km/h',1],['rh','Mean humidity','Humedad media','%',0],['et0','Reference ET₀','ET₀ de referencia','mm',1]];
 const LIM={tmax:[2,4],tmin:[2,4],wmean:[5,10],wmax:[5,10],rh:[10,20],et0:[1,2]};
 function grade(k,f,o){if(f==null||o==null)return'na';if(k==='rain'){const fr=f>=1,or=o>=1;if(fr!==or)return'bad';if(!fr)return'ok';const d=Math.abs(f-o);return d<=3||d<=.3*o?'ok':'mid'}
  const d=Math.abs(f-o),[a,b]=LIM[k];return d<=a?'ok':d<=b?'mid':'bad'}
@@ -998,7 +998,7 @@ function summary(days,n){const D=days.slice(-n);if(!D.length)return'';const L=[]
  const st=k=>{const d=D.map(x=>x.f[k]!=null&&x.o[k]!=null?x.f[k]-x.o[k]:null).filter(x=>x!=null);return{n:d.length,bias:mean(d),mae:mean(d.map(Math.abs))}};
  const bias=(k,lab,labEs,u,th)=>{const s=st(k);if(!s.n)return'';const b=s.bias,dir=Math.abs(b)<th?t('about right','acertado'):b>0?(k[0]==='t'?t('too warm','demasiado cálido'):t('too high','demasiado alto')):(k[0]==='t'?t('too cool','demasiado frío'):t('too low','demasiado bajo'));
   return `<li><b>${t(lab,labEs)}</b>: ${t('avg error','error medio')} ${s.mae.toFixed(1)} ${u} · ${Math.abs(b)<th?t('forecast is ','el pronóstico está ')+dir:t('forecast runs ','el pronóstico da ')+Math.abs(b).toFixed(1)+' '+u+' '+dir}</li>`};
- L.push(bias('tmax','Max temp','Temp. máx.','°C',.5),bias('tmin','Min temp','Temp. mín.','°C',.5),bias('wmean','Mean wind','Viento medio','km/h',1),bias('rh','Humidity','Humedad','%',3),bias('et0','ET₀','ET₀','mm',.3));
+ L.push(bias('tmax','Max temp','Temp. máx.','°C',.5),bias('tmin','Min temp','Temp. mín.','°C',.5),bias('wmean','Mean wind (2 m)','Viento medio (2 m)','km/h',1),bias('rh','Humidity','Humedad','%',3),bias('et0','ET₀','ET₀','mm',.3));
  const hit=D.filter(x=>(x.f.rain>=1)===(x.o.rain>=1)).length,fa=D.filter(x=>x.f.rain>=1&&x.o.rain<1).length,ms=D.filter(x=>x.f.rain<1&&x.o.rain>=1).length;
  L.push(`<li><b>${t('Rain yes/no','Lluvia sí/no')}</b>: ${t('right on','acertó')} ${hit}/${D.length} ${t('days','días')} (${Math.round(100*hit/D.length)}%)${fa?` · ${fa} ${t('false alarm','falsa alarma')}${fa>1?(ES()?'s':'s'):''}`:''}${ms?` · ${ms} ${t('missed','no prevista')}${ms>1?'s':''}`:''}</li>`);
  const g=D.flatMap(x=>P.map(p=>grade(p[0],x.f[p[0]],x.o[p[0]]))).filter(x=>x!=='na'),pct=g.length?Math.round(100*g.filter(x=>x==='ok').length/g.length):0;

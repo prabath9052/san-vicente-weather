@@ -9,6 +9,7 @@ import json, os, sys, statistics as stt, urllib.request, datetime as dt
 LAT, LON = -31.8506, -65.4294
 MODELS = ["ecmwf_ifs025", "gfs_seamless", "icon_seamless", "gem_seamless", "best_match"]
 VARS = ["temperature_2m", "precipitation", "wind_speed_10m", "relative_humidity_2m", "et0_fao_evapotranspiration"]
+W2M = 4.87 / __import__("math").log(67.8 * 10 - 5.42)  # A-05: FAO-56 eq.47, 10 m -> 2 m (station anemometer at 2 m) = 0.748
 OUT = "data/verification.json"; TZ = dt.timezone(dt.timedelta(hours=-3)); KEEP = 90
 def hourly_station(files):
     H = {}
@@ -40,29 +41,39 @@ def fc_days(d0, d1):
             t, p, w, rh, e = col("temperature_2m"), col("precipitation"), col("wind_speed_10m"), col("relative_humidity_2m"), col("et0_fao_evapotranspiration")
             if len(t) < 22: continue
             per["tmax"].append(max(t)); per["tmin"].append(min(t)); per["rain"].append(sum(p))
-            if w: per["wmean"].append(stt.mean(w)); per["wmax"].append(max(w))
+            if w: w = [x * W2M for x in w]; per["wmean"].append(stt.mean(w)); per["wmax"].append(max(w))
             if rh: per["rh"].append(stt.mean(rh))
             if e: per["et0"].append(sum(e))
         if not per["tmax"]: continue
         md = lambda k, n=1: round(stt.median(per[k]), n) if per[k] else None
         out[day] = {"tmax": md("tmax"), "tmin": md("tmin"), "rain": md("rain"), "wmean": md("wmean"), "wmax": md("wmax"),
-                    "rh": md("rh", 0), "et0": md("et0", 2), "models": len(per["tmax"])}
+                    "rh": md("rh", 0), "et0": md("et0", 2), "models": len(per["tmax"]), "w2m": True}
     return out
 def main():
     try: V = json.load(open(OUT))
     except Exception: V = {"days": []}
+    mig = 0  # A-05 backfill: stored forecast winds were 10 m; convert once (median of scaled = scaled median)
+    for x in V["days"]:
+        f = x.get("f", {})
+        if not f.get("w2m"):
+            for k in ("wmean", "wmax"):
+                if f.get(k) is not None: f[k] = round(f[k] * W2M, 1)
+            f["w2m"] = True; mig += 1
+    if mig: print("verify: converted forecast wind to 2 m for", mig, "stored days")
     have = {x["d"] for x in V["days"]}
     files = ["data/station-series.json"] + [f for f in os.environ.get("HIST_FILES", "").split(":") if f]
     H = hourly_station(files)
     yday = (dt.datetime.now(TZ).date() - dt.timedelta(days=1)).isoformat()
     cand = sorted({k[:10] for k in H if k[:10] <= yday} - have)
     obs = {d: o for d in cand if (o := obs_day(H, d))}
-    if not obs: print("verify: nothing new"); return False
+    if not obs:
+        if mig: json.dump(V, open(OUT, "w"), ensure_ascii=False, separators=(",", ":"))
+        print("verify: nothing new"); return False
     fc = fc_days(min(obs), max(obs)); new = 0
     for d, o in obs.items():
         if d in fc: V["days"].append({"d": d, "f": fc[d], "o": o}); new += 1
     V["days"] = sorted(V["days"], key=lambda x: x["d"])[-KEEP:]
     V.update(updated=dt.datetime.now(TZ).isoformat(timespec="minutes"),
-             method="1-day-ahead: Open-Meteo Previous Runs (previous_day1), median of ECMWF IFS, GFS, ICON, GEM, best match vs Fondomonte station")
+             method="Forecast wind converted 10 m -> 2 m (x0.748). 1-day-ahead: Open-Meteo Previous Runs (previous_day1), median of ECMWF IFS, GFS, ICON, GEM, best match vs Fondomonte station")
     json.dump(V, open(OUT, "w"), ensure_ascii=False, separators=(",", ":")); print("verify: added", new, "days:", ", ".join(sorted(obs))); return new > 0
 if __name__ == "__main__": main()
