@@ -1,6 +1,7 @@
 name: Daily ET0 alert (08:00 Argentina)
 # 08:00 local = 11:00 UTC. GitHub cron runs late, so early runs (07:00 / 07:25 local) sleep until 08:00, refresh station data, then send;
 # backup runs later in the morning. Own concurrency group (the station group's pending slot would cancel it). private/etoState.lastSentDate makes it send exactly once per day.
+# alertsLog is shared with the station job: fs_sync.py merges it and writes with a Firestore precondition (no lost entries).
 on:
   schedule:
     - cron: '0 10 * * *'    # 07:00 local: waits until 08:00, then sends
