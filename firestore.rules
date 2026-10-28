@@ -1,10 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/usernames/prabath9052).data.authUid == request.auth.uid;
-    }
+    // A-02 (2026-10-28): admin = fixed uid of prabath9052; no longer depends on the usernames doc.
+    function isAdmin() { return request.auth != null && request.auth.uid == '41BiaByGybbl0GX2pZdwc9EjDIo2'; }
     function isBot() { return request.auth != null && request.auth.uid == '6EG61Ugx0vb2G3AOVFPsh0XUZoh1'; }
 
     // usernames: ID -> email lookup for login. A-01 (2026-10-26): single-doc get by exact ID stays public
@@ -12,8 +10,8 @@ service cloud.firestore {
     match /usernames/{id} {
       allow get: if true;
       allow list: if isAdmin() || (request.auth != null && resource.data.authUid == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.authUid == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.authUid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.authUid == request.auth.uid && (id != 'prabath9052' || isAdmin());
+      allow update, delete: if request.auth != null && resource.data.authUid == request.auth.uid && (id != 'prabath9052' || isAdmin());
     }
 
     // Push subscriptions: each user writes only their own doc; the sender bot can read and prune; admin can read (device count).
