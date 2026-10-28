@@ -712,8 +712,8 @@ document.getElementById('cards2').addEventListener('keydown',e=>{const c=e.targe
 (function(){const SURL='https://prabath9052.github.io/san-vicente-weather/data/station.json';
 const f=(v,d=1)=>v==null||isNaN(v)?'—':(+v).toFixed(d);
 const DIRS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-function feels(T,RH,W){if(T==null)return null;if(T>=27&&RH!=null&&RH>=40){const F=T*9/5+32;const H=-42.379+2.04901523*F+10.14333127*RH-.22475541*F*RH-.00683783*F*F-.05481717*RH*RH+.00122874*F*F*RH+.00085282*F*RH*RH-.00000199*F*F*RH*RH;return (H-32)*5/9}
- if(T<=10&&W!=null&&W>4.8){const v=Math.pow(W,.16);return 13.12+.6215*T-11.37*v+.3965*T*v}return T}
+function feels(T,RH,W){if(T==null)return null;if(T>=27&&RH!=null){const F=T*9/5+32;let H=.5*(F+61+(F-68)*1.2+RH*.094);if((H+F)/2>=80){H=-42.379+2.04901523*F+10.14333127*RH-.22475541*F*RH-.00683783*F*F-.05481717*RH*RH+.00122874*F*F*RH+.00085282*F*RH*RH-.00000199*F*F*RH*RH;if(RH<13&&F>=80&&F<=112)H-=(13-RH)/4*Math.sqrt((17-Math.abs(F-95))/17);else if(RH>85&&F>=80&&F<=87)H+=(RH-85)/10*((87-F)/5)}return (H-32)*5/9}
+ const W10=W==null?null:W/.748;if(T<=10&&W10!=null&&W10>4.8){const v=Math.pow(W10,.16);return 13.12+.6215*T-11.37*v+.3965*T*v}return T}
 function cell(l,v,sub,big){return `<div data-k="${l}"${big?' class="big"':''}><span>${l}</span><b>${v}</b>${sub?`<span>${sub}</span>`:''}</div>`}
 async function svStation(){const box=document.getElementById('now');try{const r=await svFetchPriv('station',SURL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();
  const fl=feels(d.temp,d.rh,d.wind);const dir=d.windDir==null?'':' '+DIRS[Math.round(d.windDir/22.5)%16];
