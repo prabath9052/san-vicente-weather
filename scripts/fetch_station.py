@@ -96,7 +96,7 @@ def sun_raw(t0, step, n):
         cs = ghi_cs(ts_) if 0 <= i < n else 0
         if cs > 0 and x >= SUN_K * cs: o[i] += dtm
     return o
-def et0_series(t0, step, n, v):
+def et0_series(t0, step, n, v, last_frac=1.0):
     P = 101.3 * ((293 - 0.0065 * ELEV) / 293) ** 5.26; gam = 0.000665 * P
     hrs = step / 3600000; out = []; cum = 0; ratio = 0.7; day = None
     for i in range(n):
@@ -120,6 +120,7 @@ def et0_series(t0, step, n, v):
         Rn = 0.77 * Rs - Rnl; G = (0.04 if Ra > 0 else 0.2) * Rn; cd = 0.24 if Ra > 0 else 0.96  # ASCE-EWRI standardized short reference
         D = 4098 * es / (T + 237.3) ** 2
         e = (0.408 * D * (Rn - G) + gam * (37 * hrs) / (T + 273) * U * (es - ea)) / (D + gam * (1 + cd * U))
+        if i == n - 1: e *= last_frac  # A-04: unfinished last interval counts only its elapsed part
         cum += max(0, e); out.append(round(cum, 2))
     return out
 import math
@@ -142,7 +143,8 @@ def bucket(t0, step, n):
             o.append(round(y, nd) if nd else int(round(y)))
         v[k] = o
     v["ss"] = [round(x) for x in sun_raw(t0, step, n)]
-    v["e0"] = et0_series(t0, step, n, v)
+    lf = min(1.0, max(0.0, (ts_all - (t0 + (n - 1) * step)) / step)) if ts_all else 1.0
+    v["e0"] = et0_series(t0, step, n, v, lf)
     return {"t0": t0, "step": step, "n": n, "v": v}
 Q = 900000; H = 3600000
 q0 = int(mid_ms) - 2 * 24 * H  # 15-min buckets from local midnight two days ago (Today / 24 h / 48 h)
