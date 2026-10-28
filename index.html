@@ -833,7 +833,7 @@ const ICD={clear:'☀️',mclear:'🌤️',partly:'⛅',cloudy:'☁️',fog:'�
 const ccCat=c=>c<20?'clear':c<45?'mclear':c<80?'partly':'cloudy';
 window.svCond=function(d,c,now){now=now||Date.now();const el=sunEl(now),night=el<-0.833;let k=null,src='';
  const code=c&&num(c.weather_code)?c.weather_code:null;
- if(num(d&&d.rainToday)&&d.rainToday>0&&num(d.wetness)&&d.wetness>=60){k='rain';src='station rain'}
+ if(num(d&&d.rainToday)&&d.rainToday>0&&num(d.rain1h)&&d.rain1h>0&&num(d.wetness)&&d.wetness>=60){k='rain';src='station rain'}
  else if(code!=null&&code>=45){k=code>=95?'storm':code>=71&&code<=86&&!(code>=80&&code<=82)?'snow':code>=61?'rain':code>=51?'drizzle':'fog';src='forecast code'}
  if(!k&&!night&&d&&num(d.solar)){const ob=d.observed?new Date(d.observed).getTime():now,se=sunEl(ob);
   if(se>=15&&now-ob<90*60e3){const r=d.solar/clearSky(se);k=r>=.85?'clear':r>=.65?'mclear':r>=.35?'partly':'cloudy';src='station solar '+Math.round(r*100)+'% of clear-sky'}}

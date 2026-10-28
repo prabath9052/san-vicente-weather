@@ -59,6 +59,8 @@ out = {
   "etYesterday": r1(next((r[1] for r in series.get("20537254-1", []) if r[0] == int(mid_ms) - 24 * 3600000), None), 2),
   "rainToday": r1(sum(r[1] for r in rain if r[0] >= mid_ms)) if rain else None,
   "rain24h": r1(sum(r[1] for r in rain if r[0] >= d24)) if rain else None,
+  # rain in the hour up to the latest reading (hero rain icon needs it still raining)
+  "rain1h": r1(sum(r[1] for r in rain if r[0] > ts_all - 3600000)) if rain and ts_all else None,
   "soilWater": r1(soil, 3) if soil is not None and 0 <= soil <= 0.6 else None,
 }
 os.makedirs("data", exist_ok=True)
