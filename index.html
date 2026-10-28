@@ -862,12 +862,14 @@ function setTab(t){tagMain();document.body.dataset.tab=t;localStorage.setItem('s
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));setTab(localStorage.getItem('svTab')||'fc');
 // --- farm alerts ---
 function hrs(hit){const H=hit.map(o=>o.h);const g=[];H.forEach(h=>{const l=g[g.length-1];if(l&&l[1]===h-1)l[1]=h;else g.push([h,h])});return g.map(([a,b])=>a===b?String(a).padStart(2,'0')+':00':String(a).padStart(2,'0')+'–'+String(b+1).padStart(2,'0')+':00').join(', ')}
+// Windy decision uses forecast 10 m wind converted to 2 m (boom height), FAO-56 eq.47: 4.87/ln(67.8*10-5.42)=0.748
+const W2M=0.748,W2T=()=>ES()?' (viento a 2 m, altura del botalón)':' (wind at 2 m, boom height)';
 function alerts(r){if(!r)return[];const ext=r.ext,es=ES();const tmin=ext?r.tnMed:med(r.tn),mm=ext?r.rainMed:(r.rMed7??med(r.rn));const A=[];
  const hasH=!ext&&window.svPeriods&&svPeriods(r.d,()=>false);
  if(hasH){const F=svPeriods(r.d,x=>{const t=med(x.t);return num(t)&&t<2});if(F.hit.length){const mn=Math.min(...F.hit.map(o=>med(o.x.t)));A.push(['frost','❄','Frost risk',F.label,(es?'Horas: ':'Hours: ')+hrs(F.hit)+' · '+(es?'mín. ':'min ')+fx(mn,1)+' °C'])}}
  else if(num(tmin)&&tmin<2)A.push(['frost','❄','Frost risk','','']);
- if(hasH){const W=svPeriods(r.d,x=>num(x.w)&&x.w>15);if(W.hit.length){const mx=Math.max(...W.hit.map(o=>o.x.w));A.push(['wind','💨','Windy for spraying',W.label,(es?'Horas: ':'Hours: ')+hrs(W.hit)+' · '+(es?'viento medio máx. ':'max mean wind ')+fx(mx)+' km/h'])}}
- else{const wnd=ext?(r.wiMed??med(r.wi)):med(r.wi);if(num(wnd)&&wnd>15)A.push(['wind','💨','Windy for spraying','',(es?'Viento medio diario ':'Daily mean wind ')+fx(wnd)+' km/h'])}
+ if(hasH){const W=svPeriods(r.d,x=>num(x.w)&&x.w*W2M>15);if(W.hit.length){const mx=Math.max(...W.hit.map(o=>o.x.w*W2M));A.push(['wind','💨','Windy for spraying',W.label,(es?'Horas: ':'Hours: ')+hrs(W.hit)+' · '+(es?'viento medio máx. ':'max mean wind ')+fx(mx)+' km/h'+W2T()])}}
+ else{const wnd=ext?(r.wiMed??med(r.wi)):med(r.wi);if(num(wnd)&&wnd*W2M>15)A.push(['wind','💨','Windy for spraying','',(es?'Viento medio diario ':'Daily mean wind ')+fx(wnd*W2M)+' km/h'+W2T()])}
  if(num(mm)&&mm>20)A.push(['heavy','🌧','Heavy rain','',''] );return A}
 const chips=A=>A.length?`<div class="chips">${A.map(([c,i,t,l,tip])=>`<span class="chip ${c}"${tip?` title="${tip}" data-tip="${tip}" tabindex="0"`:''}>${i} <span>${t}</span>${l?` · <span class="cw">${l}</span>`:''}</span>`).join('')}</div>`:'';
 document.addEventListener('click',e=>{const c=e.target.closest('.chip[data-tip]');document.querySelectorAll('.chip.tipon').forEach(x=>x!==c&&x.classList.remove('tipon'));if(c){e.stopPropagation();e.preventDefault();c.classList.toggle('tipon')}},true);
