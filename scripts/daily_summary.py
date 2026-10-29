@@ -8,7 +8,7 @@ Exactly once per day: data/eto-state.json 'summarySentDate' (independent of the 
 Never fails the workflow (always exit 0). Never prints secrets; recipient emails are masked in logs.
 SMTP secrets (env): SMTP_HOST (default smtp.gmail.com), SMTP_PORT (default 465 = SSL; 587 = STARTTLS), SMTP_USER, SMTP_PASS, MAIL_FROM.
 Modes: DRY_RUN=1 compute + print text only; MOCK_SMTP=<dir> write .eml files instead of sending (no Firestore needed with
- MOCK_TO=a@b,c@d); SUMMARY_DATE=YYYY-MM-DD (test modes only); TEST=1 send ONE mail to TEST_TO (or MAIL_FROM), no state change."""
+ MOCK_TO=a@b,c@d); SUMMARY_DATE=YYYY-MM-DD (test modes only); PREVIEW_HTML=<file> (with DRY_RUN) saves the HTML; TEST=1 send ONE mail to TEST_TO (or MAIL_FROM), no state change."""
 import json, os, sys, time, hashlib, re, ssl, smtplib, statistics as stt, datetime as dt, urllib.request, urllib.error, html
 from email.message import EmailMessage
 from email.utils import formataddr, make_msgid
@@ -71,24 +71,76 @@ def fmt(S, k, lang):
     if v is None: return L[lang]["na"]
     s = f"{v:.0f}" if k in ("rhmean", "rhmin") else f"{v:.1f}"
     return (s.replace(".", ",") if lang == "es" else s) + " " + UNIT[k]
-def section(S, lang, dd):
-    t = L[lang]; rows = [(t[k], fmt(S, k, lang)) for k in KEYS]; notes = [t[n].format(str(v).replace(".", ",") if lang == "es" else v) for n, v in S["notes"]]
-    txt = f"{t['title']} {dd}\n" + "\n".join(f"  {a}: {b}" for a, b in rows) + ("\n" + "\n".join("  " + n for n in notes) if notes else "") + "\n  " + t["foot"].format(S["hours"])
-    h = (f'<h2 style="font:600 18px Arial,sans-serif;color:#1d3b2a;margin:18px 0 8px">{t["title"]} {dd}</h2>'
-         '<table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font:14px Arial,sans-serif;color:#222">'
-         + "".join(f'<tr style="border-bottom:1px solid #e5e5e5"><td style="color:#555">{html.escape(a)}</td><td style="text-align:right;font-weight:600">{html.escape(b)}</td></tr>' for a, b in rows)
-         + "</table>" + "".join(f'<p style="font:14px Arial,sans-serif;color:#0b4f8a;margin:8px 0">{html.escape(n)}</p>' for n in notes)
-         + f'<p style="font:12px Arial,sans-serif;color:#888">{html.escape(t["foot"].format(S["hours"]))}</p>')
-    return txt, h
+DOWN = {"es": "lunes martes miércoles jueves viernes sábado domingo".split(), "en": "Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()}
+TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
+             "maxmin": "máx / mín", "mean": "media", "max": "máx", "gust": "ráfaga", "grass": "pasto", "hum": "Humedad media / mínima", "sun": "Horas de sol",
+             "spray_ok": "Bueno para pulverizar", "spray_no": "Ventoso para pulverizar", "src": "Datos de la estación San Vicente, San Alberto, Córdoba", "gen": "Generado"},
+      "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
+             "maxmin": "max / min", "mean": "mean", "max": "max", "gust": "gust", "grass": "grass", "hum": "Mean / min humidity", "sun": "Sunshine hours",
+             "spray_ok": "Good for spraying", "spray_no": "Windy for spraying", "src": "San Vicente station data, San Alberto, Córdoba", "gen": "Generated"}}
+SPRAY_KMH = 15  # same rule as the wind alert: 2 m mean wind above 15 km/h = windy
+def num(v, lang, n=1):
+    if v is None: return "–"
+    s = f"{v:.{n}f}"; return s.replace(".", ",") if lang == "es" else s
 def build(S, langs, test=False):
-    d = dt.date.fromisoformat(S["date"]); dd = d.strftime("%d/%m")
-    subj = f"San Vicente – resumen del día {dd}" if langs[0] == "es" else f"San Vicente – daily summary {dd}"
+    d = dt.date.fromisoformat(S["date"]); dd = d.strftime("%d/%m"); p, q = langs[0], (langs[1] if len(langs) > 1 else None)
+    subj = (f"San Vicente – resumen del día {dd}" if p == "es" else f"San Vicente – daily summary {dd}")
     if test: subj = "[TEST] " + subj
-    parts = [section(S, l, dd) for l in langs]; unsub = " / ".join(L[l]["unsub"] for l in langs)
-    txt = ("\n\n" + "-" * 40 + "\n\n").join(p[0] for p in parts) + "\n\n" + unsub + "\n"
-    hh = ('<div style="max-width:560px;margin:0 auto;padding:8px 14px">' + '<hr style="border:0;border-top:1px solid #ccc;margin:20px 0">'.join(p[1] for p in parts)
-          + f'<p style="font:12px Arial,sans-serif;color:#888;margin-top:20px">{html.escape(unsub)}</p>'
-          + '<p style="font:12px Arial,sans-serif"><a href="https://prabath9052.github.io/san-vicente-weather/">San Vicente Weather</a></p></div>')
+    gen = dt.datetime.now(TZ).strftime("%d/%m/%Y %H:%M") + " (ART)"
+    T = lambda k: TX[p][k]; T2 = lambda k: TX[q][k] if q else ""
+    icon = "🌧" if (S["rain"] or 0) >= 1 else "☀" if (S["sun"] or 0) >= 8 else "⛅"
+    head = lambda l: f'{icon} {num(S["tmax"], l, 0)} °C · {num(S["rain"], l)} mm {TX[l]["rainw"]} · ET0 {num(S["et0"], l)} mm'
+    dline = lambda l: f'{TX[l]["day"]} {DOWN[l][d.weekday()]} {d.strftime("%d/%m/%Y")}'
+    windy = S["wmean"] is not None and S["wmean"] > SPRAY_KMH
+    spray = lambda l: ("✖ " + TX[l]["spray_no"]) if windy else ("✔ " + TX[l]["spray_ok"])
+    notes = []  # (kind, {lang: text})
+    for n, v in S["notes"]: notes.append((n, {l: L[l][n].format(num(v, l, 0 if n in ("heat", "chill") else 1)) for l in langs}))
+    cards = [("🌡", "temp", f'{num(S["tmax"], p)}° / {num(S["tmin"], p)}°', "maxmin"),
+             ("💧", "rain", f'{num(S["rain"], p)} mm', None),
+             ("🌱", "et0", f'{num(S["et0"], p)} mm', "grass"),
+             ("💨", "wind", f'{num(S["wmean"], p)} km/h', None)]
+    def sub(k, l):
+        if k == "wind": return f'{TX[l]["mean"]} · {TX[l]["max"]} {num(S["wmax"], l)} · {TX[l]["gust"]} {num(S["gust"], l)} km/h'
+        return TX[l][{"temp": "maxmin", "et0": "grass"}[k]] if k in ("temp", "et0") else ""
+    F = "font-family:Arial,Helvetica,sans-serif;"
+    def card(ic, k, val, _):
+        return (f'<td class="c" width="50%" valign="top" style="padding:6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f6f9;border-radius:10px">'
+                f'<tr><td style="padding:14px 14px 12px;{F}"><div style="font-size:22px;line-height:26px">{ic}</div>'
+                f'<div style="font-size:26px;line-height:32px;font-weight:bold;color:#1c3d55">{html.escape(val)}</div>'
+                f'<div style="font-size:13px;color:#333;font-weight:bold">{T(k)}{(" <span style=\"color:#8a97a3;font-weight:normal\">/ " + T2(k) + "</span>") if q else ""}</div>'
+                f'<div style="font-size:12px;color:#5c6b77;margin-top:2px">{html.escape(sub(k, p))}</div></td></tr></table></td>')
+    grid = "".join(f'<tr>{card(*cards[i])}{card(*cards[i+1])}</tr>' for i in (0, 2))
+    det = [(f'{T("hum")}' + (f' <span style="color:#8a97a3">/ {T2("hum")}</span>' if q else ""), f'{num(S["rhmean"], p, 0)} % / {num(S["rhmin"], p, 0)} %'),
+           (f'{T("sun")}' + (f' <span style="color:#8a97a3">/ {T2("sun")}</span>' if q else ""), f'{num(S["sun"], p)} h')]
+    dt_html = "".join(f'<tr><td style="padding:9px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:14px;color:#333">{a}</td><td align="right" style="padding:9px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:14px;font-weight:bold;color:#1c3d55;white-space:nowrap">{b}</td></tr>' for a, b in det)
+    sc, sb = ("#b3261e", "#fdecea") if windy else ("#1e7b34", "#e7f5ea")
+    spray_h = f'<div style="{F}font-size:15px;font-weight:bold;color:{sc}">{spray(p)}</div>' + (f'<div style="{F}font-size:13px;color:{sc}">{spray(q)}</div>' if q else "")
+    note_h = ""
+    for n, txt in notes:
+        bg, bd = ("#fff4e5", "#e8833a") if n == "heat" else ("#e8f1fb", "#4a86c5") if n == "chill" else ("#fff8d6", "#d9b100")
+        note_h += (f'<tr><td style="padding:6px 6px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:{bg};border-left:4px solid {bd};border-radius:6px;padding:10px 12px;{F}font-size:14px;color:#3a3a3a">'
+                   + html.escape(txt[p]) + (f'<br><span style="font-size:12px;color:#6b6b6b">{html.escape(txt[q])}</span>' if q else "") + '</td></tr></table></td></tr>')
+    hh = (f'<!DOCTYPE html><html lang="{p}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>{html.escape(subj)}</title>'
+          '<style>@media only screen and (max-width:480px){.c{display:block!important;width:100%!important;box-sizing:border-box}}</style></head>'
+          '<body style="margin:0;padding:0;background:#e9eef2"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e9eef2"><tr><td align="center" style="padding:16px 8px">'
+          '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden">'
+          f'<tr><td style="background:#24577a;padding:20px 22px;{F}color:#ffffff"><div style="font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.85">San Vicente Weather</div>'
+          f'<div style="font-size:20px;font-weight:bold;margin-top:4px">{html.escape(dline(p))}</div>' + (f'<div style="font-size:13px;opacity:.8">{html.escape(dline(q))}</div>' if q else "")
+          + f'<div style="font-size:17px;margin-top:10px">{html.escape(head(p))}</div></td></tr>'
+          f'<tr><td style="padding:12px 10px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{grid}</table></td></tr>'
+          f'<tr><td style="padding:6px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{dt_html}</table></td></tr>'
+          f'<tr><td style="padding:12px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:{sb};border-radius:8px;padding:11px 14px">{spray_h}</td></tr></table></td></tr>'
+          + (f'<tr><td style="padding:6px 10px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{note_h}</table></td></tr>' if note_h else "")
+          + f'<tr><td style="padding:18px 18px 20px;{F}font-size:11px;color:#8a97a3;line-height:16px">{html.escape(TX[p]["src"])}' + (f' · {html.escape(TX[q]["src"])}' if q else "")
+          + f'<br>{TX[p]["gen"]}{(" / " + TX[q]["gen"]) if q else ""}: {gen} · <a href="https://prabath9052.github.io/san-vicente-weather/" style="color:#24577a">San Vicente Weather</a>'
+          + f'<br>{html.escape(" / ".join(L[l]["unsub"] for l in langs))}</td></tr></table></td></tr></table></body></html>')
+    def txt_sec(l):
+        t = TX[l]; out = [dline(l), head(l), "",
+              f'{t["temp"]} ({t["maxmin"]}): {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
+              f'{t["et0"]} ({t["grass"]}): {num(S["et0"], l)} mm', f'{t["wind"]}: {sub("wind", l).replace(t["mean"], num(S["wmean"], l) + " km/h " + t["mean"], 1)}',
+              f'{t["hum"]}: {num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', f'{t["sun"]}: {num(S["sun"], l)} h', spray(l)]
+        return "\n".join(out + [x[l] for _, x in notes])
+    txt = "San Vicente Weather\n\n" + ("\n\n" + "-" * 40 + "\n\n").join(txt_sec(l) for l in langs) + f'\n\n{TX[p]["src"]} · {gen}\n' + " / ".join(L[l]["unsub"] for l in langs) + "\n"
     return subj, txt, hh
 def recipients():
     if E("MOCK_TO"): return [(a.strip(), None) for a in E("MOCK_TO").split(",") if a.strip()]
@@ -128,7 +180,9 @@ def main():
     S = calc(yd, now)
     if not S: print("summary: < 22 station hours for", ys, "; skipping (retry next run)"); return
     if DRY:
-        print(build(S, ["es", "en"])[1]); return
+        subj, txt, hh = build(S, ["es", "en"]); print(subj); print(txt)
+        if E("PREVIEW_HTML"): open(E("PREVIEW_HTML"), "w", encoding="utf-8").write(hh); print("preview written:", E("PREVIEW_HTML"))
+        return
     if not MOCK and not (E("SMTP_USER") and E("SMTP_PASS")):
         print("summary: SMTP secrets missing (need SMTP_USER, SMTP_PASS; optional SMTP_HOST, SMTP_PORT, MAIL_FROM) - email skipped"); return
     frm = E("MAIL_FROM") or E("SMTP_USER") or "noreply@example.com"
