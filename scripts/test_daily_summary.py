@@ -23,6 +23,6 @@ class FakeDT(dt.datetime):
 d.dt = type("m", (), {"datetime": FakeDT, "date": dt.date, "timedelta": dt.timedelta, "time": dt.time})
 d.main(); s = json.load(open(st))
 assert len(SENT) == 2, SENT; assert s["summarySentDate"] == day and s["lastSentDate"] == "KEEP", s
-assert "resumen del día" in SENT[0]["Subject"] and SENT[0].get_body("html") is not None
+assert "daily summary" in SENT[0]["Subject"] and SENT[0].get_body("html") is not None
 d.main(); assert len(SENT) == 2  # once per day
 print("OK:", day, SENT[0]["Subject"], "->", len(SENT), "mails;", s)

@@ -3,7 +3,7 @@
 Data: data/station-series.json hourly 'h' (t,tx,tn,rh,w,g,r,ss,e0) + data/station.json etYesterday (same ET0 as the push).
 Recipients (Firestore alertNominees, read by the bot): any doc with summary == true and a valid 'email' field —
  user docs ({uid}, email entered by admin) and email-only docs ('email_<sha1(lower email)>', created in the admin panel).
- Optional field lang 'es'/'en' -> single language; otherwise bilingual (Spanish first).
+ Optional field lang 'es'/'en' -> single language; otherwise bilingual (English first, Spanish second).
 Exactly once per day: data/eto-state.json 'summarySentDate' (independent of the push's lastSentDate; never touches it).
 Never fails the workflow (always exit 0). Never prints secrets; recipient emails are masked in logs.
 SMTP secrets (env): SMTP_HOST (default smtp.gmail.com), SMTP_PORT (default 465 = SSL; 587 = STARTTLS), SMTP_USER, SMTP_PASS, MAIL_FROM.
@@ -72,12 +72,12 @@ def fmt(S, k, lang):
     s = f"{v:.0f}" if k in ("rhmean", "rhmin") else f"{v:.1f}"
     return (s.replace(".", ",") if lang == "es" else s) + " " + UNIT[k]
 DOWN = {"es": "lunes martes miércoles jueves viernes sábado domingo".split(), "en": "Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()}
-TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
+TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura máx. / mín.", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
              "maxmin": "máx / mín", "mean": "media", "max": "máx", "gust": "ráfaga", "grass": "pasto", "hum": "Humedad media / mínima", "sun": "Horas de sol",
              "spray_ok": "Bueno para pulverizar", "spray_no": "Ventoso para pulverizar", "src": "Datos de la estación San Vicente, San Alberto, Córdoba", "gen": "Generado"},
-      "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
+      "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature max / min", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
              "maxmin": "max / min", "mean": "mean", "max": "max", "gust": "gust", "grass": "grass", "hum": "Mean / min humidity", "sun": "Sunshine hours",
-             "spray_ok": "Good for spraying", "spray_no": "Windy for spraying", "src": "San Vicente station data, San Alberto, Córdoba", "gen": "Generated"}}
+             "spray_ok": "Good for spraying", "spray_no": "Windy for spraying", "src": "Station data – San Vicente, San Alberto, Córdoba", "gen": "Generated"}}
 SPRAY_KMH = 15  # same rule as the wind alert: 2 m mean wind above 15 km/h = windy
 def num(v, lang, n=1):
     if v is None: return "–"
@@ -90,7 +90,7 @@ def build(S, langs, test=False):
     T = lambda k: TX[p][k]; T2 = lambda k: TX[q][k] if q else ""
     icon = "🌧" if (S["rain"] or 0) >= 1 else "☀" if (S["sun"] or 0) >= 8 else "⛅"
     head = lambda l: f'{icon} {num(S["tmax"], l, 0)} °C · {num(S["rain"], l)} mm {TX[l]["rainw"]} · ET0 {num(S["et0"], l)} mm'
-    dline = lambda l: f'{TX[l]["day"]} {DOWN[l][d.weekday()]} {d.strftime("%d/%m/%Y")}'
+    dline = lambda l: f'{TX[l]["day"]} – {DOWN[l][d.weekday()]} {d.strftime("%d/%m/%Y")}'
     windy = S["wmean"] is not None and S["wmean"] > SPRAY_KMH
     spray = lambda l: ("✖ " + TX[l]["spray_no"]) if windy else ("✔ " + TX[l]["spray_ok"])
     notes = []  # (kind, {lang: text})
@@ -101,7 +101,7 @@ def build(S, langs, test=False):
              ("💨", "wind", f'{num(S["wmean"], p)} km/h', None)]
     def sub(k, l):
         if k == "wind": return f'{TX[l]["mean"]} · {TX[l]["max"]} {num(S["wmax"], l)} · {TX[l]["gust"]} {num(S["gust"], l)} km/h'
-        return TX[l][{"temp": "maxmin", "et0": "grass"}[k]] if k in ("temp", "et0") else ""
+        return TX[l]["grass"] if k == "et0" else ""
     F = "font-family:Arial,Helvetica,sans-serif;"
     def card(ic, k, val, _):
         return (f'<td class="c" width="50%" valign="top" style="padding:6px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f6f9;border-radius:10px">'
@@ -136,7 +136,7 @@ def build(S, langs, test=False):
           + f'<br>{html.escape(" / ".join(L[l]["unsub"] for l in langs))}</td></tr></table></td></tr></table></body></html>')
     def txt_sec(l):
         t = TX[l]; out = [dline(l), head(l), "",
-              f'{t["temp"]} ({t["maxmin"]}): {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
+              f'{t["temp"]}: {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
               f'{t["et0"]} ({t["grass"]}): {num(S["et0"], l)} mm', f'{t["wind"]}: {sub("wind", l).replace(t["mean"], num(S["wmean"], l) + " km/h " + t["mean"], 1)}',
               f'{t["hum"]}: {num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', f'{t["sun"]}: {num(S["sun"], l)} h', spray(l)]
         return "\n".join(out + [x[l] for _, x in notes])
@@ -180,7 +180,7 @@ def main():
     S = calc(yd, now)
     if not S: print("summary: < 22 station hours for", ys, "; skipping (retry next run)"); return
     if DRY:
-        subj, txt, hh = build(S, ["es", "en"]); print(subj); print(txt)
+        subj, txt, hh = build(S, ["en", "es"]); print(subj); print(txt)
         if E("PREVIEW_HTML"): open(E("PREVIEW_HTML"), "w", encoding="utf-8").write(hh); print("preview written:", E("PREVIEW_HTML"))
         return
     if not MOCK and not (E("SMTP_USER") and E("SMTP_PASS")):
@@ -193,7 +193,7 @@ def main():
     if not rc: print("summary: no recipients"); return
     msgs = []
     for a, lg in rc:
-        subj, txt, hh = build(S, [lg] if lg else ["es", "en"], TEST)
+        subj, txt, hh = build(S, [lg] if lg else ["en", "es"], TEST)
         m = EmailMessage(); m["Subject"] = subj; m["From"] = formataddr(("San Vicente Weather", frm)); m["To"] = a
         m["Message-ID"] = make_msgid(domain="san-vicente-weather"); m.set_content(txt); m.add_alternative(hh, subtype="html"); msgs.append(m)
     n = send(msgs); print("summary: sent", n, "of", len(msgs), "(TEST)" if TEST else "(MOCK)" if MOCK else "")
