@@ -15,6 +15,10 @@ on:
         description: 'TEST: send ONE push to prabath9052 + ONE summary email to MAIL_FROM (no state, no log)'
         type: boolean
         default: true
+      test_to:
+        description: 'TEST summary email recipient (empty = MAIL_FROM)'
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -57,6 +61,7 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          TEST_TO: ${{ github.event.inputs.test_to }}
           TEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.test == 'true' && '1' || '' }}
         run: |
           python3 -u scripts/daily_summary.py
