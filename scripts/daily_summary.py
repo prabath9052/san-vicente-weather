@@ -53,7 +53,6 @@ def calc(yd, now):
     elif S["tmin"] is not None and S["tmin"] < 4: notes.append(("gfrost", S["tmin"]))
     S["notes"] = notes
     S["hrs"] = [(int(k[11:13]), H[k]) for k in sorted(H) if k.startswith(ys)]
-    S["clim"] = climatology(ys)
     return S
 L = {"es": {"tmax": "Temperatura máxima", "tmin": "Temperatura mínima", "rain": "Lluvia", "wmean": "Viento medio (2 m)",
             "wmax": "Viento máximo (2 m, media horaria)", "gust": "Ráfaga máxima", "rhmean": "Humedad media", "rhmin": "Humedad mínima",
@@ -75,31 +74,19 @@ def fmt(S, k, lang):
     s = f"{v:.0f}" if k in ("rhmean", "rhmin") else f"{v:.1f}"
     return (s.replace(".", ",") if lang == "es" else s) + " " + UNIT[k]
 DOWN = {"es": "lunes martes miércoles jueves viernes sábado domingo".split(), "en": "Monday Tuesday Wednesday Thursday Friday Saturday Sunday".split()}
-MONN = {"en": "January February March April May June July August September October November December".split(),
-        "es": "enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre".split()}
 TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura máx. / mín.", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
              "mean": "media", "max": "máx", "gust": "ráfaga", "grass": "pasto", "hum": "Humedad media / mínima", "sun": "Horas de sol",
-             "chart": "Temperatura por hora", "norm": "Comparado con lo normal",
+             "chart": "Temperatura por hora",
              "src": "Datos de la estación San Vicente, San Alberto, Córdoba", "gen": "Generado"},
       "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature max / min", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
              "mean": "mean", "max": "max", "gust": "gust", "grass": "grass", "hum": "Mean / min humidity", "sun": "Sunshine hours",
-             "chart": "Hourly temperature", "norm": "Compared with normal",
+             "chart": "Hourly temperature",
              "src": "Station data – San Vicente, San Alberto, Córdoba", "gen": "Generated"}}
 BLUE, GREEN = "#24577a", "#3e8a2f"  # app blue + Fondomonte green (from the Fondomonte logo)
 LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo-fondomonte-128.png")
 def num(v, lang, n=1):
     if v is None: return "–"
     s = f"{v:.{n}f}"; return s.replace(".", ",") if lang == "es" else s
-def climatology(ys):
-    """Mean of the station's observed daily values (data/verification.json, restored from Firestore) excluding the day itself.
-    Same calendar month when >= 10 such days exist, else all available days."""
-    try: days = json.load(open("data/verification.json"))["days"]
-    except Exception: return None
-    obs = [(x["d"], x["o"]) for x in days if x.get("o") and x["d"] != ys and x["d"] < ys]
-    same = [o for d, o in obs if d[5:7] == ys[5:7]]; use = same if len(same) >= 10 else [o for _, o in obs]
-    if len(use) < 5: return None
-    m = lambda k: (stt.mean([o[k] for o in use if o.get(k) is not None]) if any(o.get(k) is not None for o in use) else None)
-    return {"n": len(use), "month": len(use) == len(same), "tmax": m("tmax"), "tmin": m("tmin"), "rain": m("rain"), "et0": m("et0")}
 def chart_png(S):
     try:
         import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt, io
@@ -114,26 +101,6 @@ def chart_png(S):
     ax.set_ylabel("°C", fontsize=8, color="#5c6b77"); ax.tick_params(labelsize=7.5, colors="#5c6b77", length=0); ax.grid(axis="y", color="#e3e8ec", lw=.8)
     for sp in ax.spines.values(): sp.set_visible(False)
     fig.tight_layout(pad=.4); b = io.BytesIO(); fig.savefig(b, format="png", facecolor="white"); plt.close(fig); return b.getvalue()
-def norm_lines(S, l):
-    c = S.get("clim")
-    if not c: return []
-    out, d = [], dt.date.fromisoformat(S["date"])
-    per = MONN[l][d.month - 1] if c["month"] else None
-    def pct(v, m, name, unit):
-        if v is None or not m: return
-        p = (v - m) / m * 100; w = ({"en": "above", "es": "más"} if p > 0 else {"en": "below", "es": "menos"})[l]
-        if abs(p) < 3: out.append(f'{name} {num(v, l)} {unit} · ' + ("about average" if l == "en" else "en el promedio") + f' ({num(m, l)})')
-        else: out.append(f'{name} {num(v, l)} {unit} · ~{abs(p):.0f}% {w} ' + ("average" if l == "en" else "que el promedio") + f' ({num(m, l)})')
-    def deg(v, m, name):
-        if v is None or m is None: return
-        dd = v - m; w = ({"en": "warmer", "es": "más cálida"} if dd > 0 else {"en": "cooler", "es": "más fresca"})[l]
-        out.append(f'{name} {num(v, l)} °C · ' + (("about average" if l == "en" else "en el promedio") if abs(dd) < .5 else f'{num(abs(dd), l)} °C {w}') + f' ({num(m, l)})')
-    pct(S["et0"], c["et0"], "ET0", "mm")
-    deg(S["tmax"], c["tmax"], "Max" if l == "en" else "Máx."); deg(S["tmin"], c["tmin"], "Min" if l == "en" else "Mín.")
-    if S["rain"] is not None and c["rain"] is not None:
-        out.append(f'{"Rain" if l == "en" else "Lluvia"} {num(S["rain"], l)} mm · ' + (f'average {num(c["rain"], l)} mm/day' if l == "en" else f'promedio {num(c["rain"], l)} mm/día'))
-    basis = (f'Average for {per}, ' if per and l == "en" else f'Promedio de {per}, ' if per else "") + (f'based on {c["n"]} days of station records' if l == "en" else f'basado en {c["n"]} días de registros de la estación')
-    return out + [basis[0].upper() + basis[1:] + "."]
 def build(S, langs, test=False):
     """Returns subject, text, html, {cid: png bytes}. HTML references images as cid:<id> (attached as multipart/related)."""
     d = dt.date.fromisoformat(S["date"]); dd = d.strftime("%d/%m"); p, q = langs[0], (langs[1] if len(langs) > 1 else None)
@@ -167,15 +134,6 @@ def build(S, langs, test=False):
     grid = "".join(f'<tr>{card(*cards[i])}{card(*cards[i+1])}</tr>' for i in (0, 2))
     det = [(lab("hum"), f'{num(S["rhmean"], p, 0)} % / {num(S["rhmin"], p, 0)} %'), (lab("sun"), f'{num(S["sun"], p)} h')]
     dt_html = "".join(f'<tr><td style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:15px">{a}</td><td align="right" style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:17px;font-weight:bold;color:{BLUE};white-space:nowrap">{b}</td></tr>' for a, b in det)
-    nl = {l: norm_lines(S, l) for l in langs}
-    norm_h = ""
-    if nl[p]:
-        norm_h = (f'<tr><td style="padding:14px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#f4f8f2;border-left:4px solid {GREEN};border-radius:8px;padding:12px 14px;{F}">'
-                  f'<div style="font-size:15px;font-weight:bold;color:#1f2a30">📊 {T("norm")}' + (f' <span style="font-weight:normal;color:#8a97a3;font-size:13px">/ {T2("norm")}</span>' if q else "") + '</div>'
-                  + "".join(f'<div style="font-size:14px;color:#333;margin-top:4px">{html.escape(x)}</div>' for x in nl[p][:-1])
-                  + f'<div style="font-size:12px;color:#5c6b77;margin-top:6px">{html.escape(nl[p][-1])}</div>'
-                  + (f'<div style="font-size:12px;color:#8a97a3;margin-top:8px;border-top:1px solid #dfe8da;padding-top:6px">{html.escape(" · ".join(nl[q]))}</div>' if q and nl[q] else "")
-                  + '</td></tr></table></td></tr>')
     note_h = ""
     for n, txt in notes:
         bg, bd = ("#fff4e5", "#e8833a") if n == "heat" else ("#e8f1fb", "#4a86c5") if n == "chill" else ("#fff8d6", "#d9b100")
@@ -193,7 +151,7 @@ def build(S, langs, test=False):
           f'<div style="font-size:22px;line-height:27px;font-weight:bold;margin-top:4px">{html.escape(dline(p))}</div>' + (f'<div style="font-size:14px;opacity:.8">{html.escape(dline(q))}</div>' if q else "")
           + f'</td></tr></table><div style="font-size:19px;margin-top:12px">{html.escape(head(p))}</div></td></tr>'
           f'<tr><td style="padding:8px 10px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{grid}</table></td></tr>'
-          + chart + norm_h
+          + chart
           + f'<tr><td style="padding:10px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{dt_html}</table></td></tr>'
           + note_h
           + f'<tr><td style="padding:18px 18px 20px;{F}font-size:12px;color:#8a97a3;line-height:17px">{html.escape(TX[p]["src"])}' + (f' · {html.escape(TX[q]["src"])}' if q else "")
@@ -204,7 +162,6 @@ def build(S, langs, test=False):
               f'{t["temp"]}: {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
               f'{t["et0"]} ({t["grass"]}): {num(S["et0"], l)} mm', f'{t["wind"]}: {num(S["wmean"], l)} km/h {sub("wind", l)}',
               f'{t["hum"]}: {num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', f'{t["sun"]}: {num(S["sun"], l)} h']
-        if nl[l]: out += ["", t["norm"] + ":"] + ["  " + x for x in nl[l]]
         return "\n".join(out + [x[l] for _, x in notes])
     txt = "San Vicente Weather · Fondomonte\n\n" + ("\n\n" + "-" * 40 + "\n\n").join(txt_sec(l) for l in langs) + f'\n\n{TX[p]["src"]} · {gen}\n' + " / ".join(L[l]["unsub"] for l in langs) + "\n"
     return subj, txt, hh, imgs

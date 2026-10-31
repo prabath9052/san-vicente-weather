@@ -24,7 +24,7 @@ d.dt = type("m", (), {"datetime": FakeDT, "date": dt.date, "timedelta": dt.timed
 d.main(); s = json.load(open(st))
 assert len(SENT) == 2, SENT; assert s["summarySentDate"] == day and s["lastSentDate"] == "KEEP", s
 assert "daily summary" in SENT[0]["Subject"] and SENT[0].get_body("html") is not None
-assert "spray" not in SENT[0].as_string().lower()
+assert "spray" not in SENT[0].as_string().lower() and "compared with normal" not in SENT[0].get_body("plain").get_content().lower()
 rel = [p for p in SENT[0].walk() if p.get_content_type() == "multipart/related"]; assert rel, "no multipart/related"
 pngs = {p["Content-ID"]: p for p in SENT[0].walk() if p.get_content_type() == "image/png"}
 html_part = SENT[0].get_body("html").get_content()
