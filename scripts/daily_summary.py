@@ -79,11 +79,11 @@ MONN = {"en": "January February March April May June July August September Octob
         "es": "enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre".split()}
 TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura máx. / mín.", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
              "mean": "media", "max": "máx", "gust": "ráfaga", "grass": "pasto", "hum": "Humedad media / mínima", "sun": "Horas de sol",
-             "morning": "Mañana", "afternoon": "Tarde", "night": "Noche", "chart": "Temperatura por hora", "norm": "Comparado con lo normal",
+             "chart": "Temperatura por hora", "norm": "Comparado con lo normal",
              "src": "Datos de la estación San Vicente, San Alberto, Córdoba", "gen": "Generado"},
       "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature max / min", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
              "mean": "mean", "max": "max", "gust": "gust", "grass": "grass", "hum": "Mean / min humidity", "sun": "Sunshine hours",
-             "morning": "Morning", "afternoon": "Afternoon", "night": "Night", "chart": "Hourly temperature", "norm": "Compared with normal",
+             "chart": "Hourly temperature", "norm": "Compared with normal",
              "src": "Station data – San Vicente, San Alberto, Córdoba", "gen": "Generated"}}
 BLUE, GREEN = "#24577a", "#3e8a2f"  # app blue + Fondomonte green (from the Fondomonte logo)
 LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo-fondomonte-128.png")
@@ -100,17 +100,6 @@ def climatology(ys):
     if len(use) < 5: return None
     m = lambda k: (stt.mean([o[k] for o in use if o.get(k) is not None]) if any(o.get(k) is not None for o in use) else None)
     return {"n": len(use), "month": len(use) == len(same), "tmax": m("tmax"), "tmin": m("tmin"), "rain": m("rain"), "et0": m("et0")}
-def part_icon(rows, day):
-    """Emoji for a part of the day: storm/rain > wind > sunshine fraction (day) or moon (night)."""
-    if not rows: return "–"
-    g = lambda k: [r[k] for r in rows if r.get(k) is not None]
-    rain = sum(g("r")); gust = max(g("g") or [0]); wm = stt.mean(g("w")) if g("w") else 0
-    if rain >= 10 or (rain >= 1 and gust >= 60): return "⛈"
-    if rain >= 0.2: return "🌧"
-    if wm > 20 or gust >= 50: return "💨"
-    if not day: return "🌙"
-    sun = sum(g("ss")) / (60 * len(rows)) if g("ss") else None
-    return "☀️" if sun is None or sun >= .6 else "⛅" if sun >= .25 else "☁️"
 def chart_png(S):
     try:
         import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt, io
@@ -160,8 +149,6 @@ def build(S, langs, test=False):
     icon = "🌧" if (S["rain"] or 0) >= 1 else "☀️" if (S["sun"] or 0) >= 8 else "⛅"
     head = lambda l: f'{icon} {num(S["tmax"], l, 0)} °C · {num(S["rain"], l)} mm {TX[l]["rainw"]} · ET0 {num(S["et0"], l)} mm'
     dline = lambda l: f'{TX[l]["day"]} – {DOWN[l][d.weekday()]} {d.strftime("%d/%m/%Y")}'
-    hr = S["hrs"]; parts = [("morning", part_icon([r for h, r in hr if 6 <= h < 12], True)), ("afternoon", part_icon([r for h, r in hr if 12 <= h < 18], True)),
-                            ("night", part_icon([r for h, r in hr if h >= 18 or h < 6], False))]
     notes = [(n, {l: L[l][n].format(num(v, l, 0 if n in ("heat", "chill") else 1)) for l in langs}) for n, v in S["notes"]]
     def sub(k, l):
         if k == "wind": return f'{TX[l]["mean"]} · {TX[l]["max"]} {num(S["wmax"], l)} · {TX[l]["gust"]} {num(S["gust"], l)} km/h'
@@ -178,7 +165,6 @@ def build(S, langs, test=False):
                 f'<div style="font-size:32px;line-height:40px;font-weight:bold;color:{fg}">{html.escape(val)}</div>'
                 f'<div style="font-size:15px;line-height:19px">{lab(k, 15)}</div>' + (f'<div style="font-size:13px;color:#5c6b77;margin-top:3px">{html.escape(sb)}</div>' if sb else "") + '</td></tr></table></td>')
     grid = "".join(f'<tr>{card(*cards[i])}{card(*cards[i+1])}</tr>' for i in (0, 2))
-    pd = "".join(f'<td width="33%" align="center" style="padding:10px 4px;{F}"><div style="font-size:34px;line-height:40px">{ic}</div><div style="font-size:15px">{lab(k)}</div></td>' for k, ic in parts)
     det = [(lab("hum"), f'{num(S["rhmean"], p, 0)} % / {num(S["rhmin"], p, 0)} %'), (lab("sun"), f'{num(S["sun"], p)} h')]
     dt_html = "".join(f'<tr><td style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:15px">{a}</td><td align="right" style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:17px;font-weight:bold;color:{BLUE};white-space:nowrap">{b}</td></tr>' for a, b in det)
     nl = {l: norm_lines(S, l) for l in langs}
@@ -206,7 +192,6 @@ def build(S, langs, test=False):
           f'<div style="font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.9">San Vicente Weather · <b>Fondomonte</b></div>'
           f'<div style="font-size:22px;line-height:27px;font-weight:bold;margin-top:4px">{html.escape(dline(p))}</div>' + (f'<div style="font-size:14px;opacity:.8">{html.escape(dline(q))}</div>' if q else "")
           + f'</td></tr></table><div style="font-size:19px;margin-top:12px">{html.escape(head(p))}</div></td></tr>'
-          f'<tr><td style="padding:12px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8fa;border-radius:12px"><tr>{pd}</tr></table></td></tr>'
           f'<tr><td style="padding:8px 10px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{grid}</table></td></tr>'
           + chart + norm_h
           + f'<tr><td style="padding:10px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">{dt_html}</table></td></tr>'
@@ -215,7 +200,7 @@ def build(S, langs, test=False):
           + f'<br>{TX[p]["gen"]}{(" / " + TX[q]["gen"]) if q else ""}: {gen} · <a href="https://prabath9052.github.io/san-vicente-weather/" style="color:{BLUE}">San Vicente Weather</a>'
           + f'<br>{html.escape(" / ".join(L[l]["unsub"] for l in langs))}</td></tr></table></td></tr></table></body></html>')
     def txt_sec(l):
-        t = TX[l]; out = [dline(l), head(l), "", " · ".join(f'{t[k]} {ic}' for k, ic in parts), "",
+        t = TX[l]; out = [dline(l), head(l), "",
               f'{t["temp"]}: {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
               f'{t["et0"]} ({t["grass"]}): {num(S["et0"], l)} mm', f'{t["wind"]}: {num(S["wmean"], l)} km/h {sub("wind", l)}',
               f'{t["hum"]}: {num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', f'{t["sun"]}: {num(S["sun"], l)} h']
