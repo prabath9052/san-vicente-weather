@@ -24,5 +24,11 @@ d.dt = type("m", (), {"datetime": FakeDT, "date": dt.date, "timedelta": dt.timed
 d.main(); s = json.load(open(st))
 assert len(SENT) == 2, SENT; assert s["summarySentDate"] == day and s["lastSentDate"] == "KEEP", s
 assert "daily summary" in SENT[0]["Subject"] and SENT[0].get_body("html") is not None
+assert "spray" not in SENT[0].as_string().lower()
+rel = [p for p in SENT[0].walk() if p.get_content_type() == "multipart/related"]; assert rel, "no multipart/related"
+pngs = {p["Content-ID"]: p for p in SENT[0].walk() if p.get_content_type() == "image/png"}
+html_part = SENT[0].get_body("html").get_content()
+for cid in pngs: assert "cid:" + cid.strip("<>") in html_part, cid
+print("MIME images:", sorted(pngs), [len(p.get_payload(decode=True)) for p in pngs.values()])
 d.main(); assert len(SENT) == 2  # once per day
 print("OK:", day, SENT[0]["Subject"], "->", len(SENT), "mails;", s)

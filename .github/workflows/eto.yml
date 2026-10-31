@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install
-        run: pip install -q pywebpush
+        run: pip install -q pywebpush matplotlib
       - name: Wait until 08:00 local (11:00 UTC)
         if: github.event_name == 'schedule'
         run: |
