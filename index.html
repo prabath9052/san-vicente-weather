@@ -1218,7 +1218,7 @@ function draw(){const P=SPEC[cur],box=$('tgBody'),mob=innerWidth<=600;$('tgTitle
  else{leg=C.lines.map(s=>`<span><i style="background:${s.c}"></i>${L(s.n[0],s.n[1])} [${P.u}]</span>`).join('')+(P.band?`<span><i style="background:${P.band[2]};opacity:.3"></i>${L('15-min min–max','mín.–máx. 15 min')}</span>`:'');
   sts=C.lines.map(s=>{let e=ext(D.xs,s.v);if(P.band){const lo=ext(D.xs,D.g(P.band[0])),hi=ext(D.xs,D.g(P.band[1]));if(lo.mn&&hi.mx)e={mn:lo.mn,mx:hi.mx}}return stat(L(s.n[0],s.n[1]),e,P.u,P.d??1)}).join('');
   if(P.ss){const ss=D.g('ss').filter(num);sts+=`<div class="tg-st"><span>${L('Sunshine today','Horas de sol hoy')}</span><b>${ss.length?fx(ss.reduce((a,v)=>a+v,0)/60,1)+' h':'—'}</b></div>`}}
- box.innerHTML=`<div class="tg-w">${C.html}<div class="sg-tt tg-tt" hidden></div></div><div class="sg-lg2 tg-lg">${leg}</div><div class="tg-sts">${sts}</div>`+upd+`<p class="tg-hint">${L('Touch or slide one finger for values · pinch or drag with two fingers to zoom and pan · double-tap to reset','Tocá o deslizá un dedo para ver valores · pellizcá o arrastrá con dos dedos para zoom y desplazar · doble toque para restablecer')}</p>`;
+ box.innerHTML=`<div class="tg-w">${C.html}<div class="sg-tt tg-tt" hidden></div></div><div class="sg-lg2 tg-lg">${leg}</div><div class="tg-sts">${sts}</div>`+upd;
  C.D=D;C.P=P;box._c=C}
 // crosshair + readout (same behaviour/style as the Station graphs: hover, or touch and drag along the graph)
 function tip(e,body){const C=body._c,w=body.querySelector('.tg-w'),sv=w&&w.querySelector('svg');if(!C||!sv)return;const ln=sv.querySelector('.sg-x'),dots=sv.querySelector('.tg-dots'),tt=w.querySelector('.tg-tt');
