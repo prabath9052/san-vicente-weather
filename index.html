@@ -252,6 +252,26 @@ html[data-theme=dark] .tabs button[data-t=fc]{background:#3a2f1a;color:#ffd58a}h
 .vf-dlb{font:inherit;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid #8886;background:var(--card,#fff2);color:inherit;cursor:pointer}
 .vf-dlm{position:absolute;top:100%;right:0;z-index:5;display:flex;flex-direction:column;margin-top:4px;background:var(--bg,#fff);border:1px solid #8886;border-radius:10px;box-shadow:0 6px 20px #0003;overflow:hidden;min-width:160px}
 .vf-dlm[hidden]{display:none}.vf-dlm button{font:inherit;text-align:left;padding:11px 14px;border:0;background:none;color:inherit;cursor:pointer}.vf-dlm button+button{border-top:1px solid #8883}.vf-dlm button:hover{background:#8882}
+</style><style id="tg">/* station tile -> today's graph */
+#nowg>.tg-on{cursor:pointer;transition:box-shadow .15s,transform .15s}
+#nowg>.tg-on:hover{box-shadow:0 0 0 2px var(--acc)}#nowg>.tg-on:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#nowg>.tg-on:active{transform:scale(.98)}
+#nowg .tg-ic{position:absolute;right:9px;bottom:8px;color:var(--acc);opacity:.7;line-height:0;font-style:normal}
+.tg-bg{position:fixed;inset:0;background:#0d1a2480;z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .18s}
+.tg-bg.on{opacity:1}.tg-bg[hidden]{display:none}
+.tg-m{background:var(--card);color:var(--fg);border-radius:16px;box-shadow:0 10px 40px #0005;width:min(820px,94vw);max-height:90vh;overflow:auto;padding:14px 18px 16px;box-sizing:border-box}
+.tg-h{display:flex;align-items:flex-start;gap:10px;position:relative}.tg-h h3{margin:0;flex:1;font-size:1.1rem;color:var(--fg)}
+.tg-h h3 .s{display:block;font-size:.8rem;font-weight:400;color:var(--mut);margin-top:2px}
+.tg-x{border:0;background:var(--soft);color:var(--fg);width:34px;height:34px;border-radius:50%;font-size:1rem;cursor:pointer;flex:none}.tg-x:hover{background:var(--acc);color:#fff}
+.tg-grab{display:none}
+.tg-w{margin-top:10px;border-radius:10px;overflow:hidden;touch-action:pan-y}.tg-w svg{width:100%;height:auto;display:block}
+.tg-lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--mut);margin:6px 0}.tg-lg i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.tg-sts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:6px}
+.tg-st{background:var(--soft);border-radius:10px;padding:8px 10px;font-size:.85rem}.tg-st>span{display:block;color:var(--mut);font-size:.78rem;margin-bottom:2px}.tg-st small{color:var(--mut)}
+.tg-upd{font-size:.8rem;color:var(--mut);margin:10px 0 0}.tg-hint{font-size:.75rem;color:var(--mut);margin:4px 0 0;opacity:.8}.tg-empty{padding:30px 0;text-align:center;color:var(--mut)}
+@media(max-width:600px){.tg-bg{align-items:flex-end}.tg-m{width:100%;max-height:88vh;border-radius:18px 18px 0 0;padding:8px 12px calc(14px + env(safe-area-inset-bottom));transform:translateY(30px);transition:transform .2s}
+ .tg-bg.on .tg-m{transform:none}.tg-grab{display:block;position:absolute;left:50%;top:-2px;width:40px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}.tg-h{padding-top:10px}
+ .tg-sts{grid-template-columns:1fr}#nowg .tg-ic{right:7px;bottom:6px}}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Private station data: read from Firestore 'private/{doc}' after login (no public copy) =====
 (function(){const PUBLIC_FALLBACK=false;
  const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
@@ -738,7 +758,7 @@ let S=null,R='48h';const bg=document.getElementById('sgBg'),box=document.getElem
 const TZO=-3*3600e3,hh=ms=>{const d=new Date(ms+TZO);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
 const dd=ms=>new Date(ms).toLocaleDateString(SV_LANG==='es'?'es-AR':'en-GB',{timeZone:'America/Argentina/Cordoba',weekday:'short',day:'numeric'});
 const fm=(v,d)=>v==null?'—':t((+v).toFixed(d));
-async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();document.getElementById('sgHint').hidden=false;document.getElementById('stGraphs').hidden=false;render();box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
+async function load(){try{const r=await svFetchPriv('stationSeries',SU+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);S=await r.json();window.dispatchEvent(new CustomEvent('svseries',{detail:S}));document.getElementById('sgHint').hidden=false;document.getElementById('stGraphs').hidden=false;render();box.classList.add('clk')}catch(e){console.warn('station-series.json:',e.message);S=null}if(bg.classList.contains('on'))render()}
 function slice(){if(!S)return null;const B=R==='7d'?S.h:S.q;if(!B||!B.v)return null;const now=Date.now();let a=R==='today'?S.midnight:R==='24h'?now-864e5:R==='48h'?now-1728e5:B.t0;
  let xs=[],ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=a-1&&x<=now){xs.push(x);ix.push(i)}}let fa=xs.length?xs[0]:a,fb=Math.max(now,xs.length?xs[xs.length-1]+B.step:now);window.SVF={a:fa,b:fb,step:B.step};const Z=window.SVZ;if(Z){const k=xs.map((x,j)=>x>=Z.a&&x+B.step<=Z.b+1?j:-1).filter(j=>j>=0);xs=k.map(j=>xs[j]);ix=k.map(j=>ix[j]);fa=Z.a;fb=Z.b}const g=k=>ix.map(i=>(B.v[k]||[])[i]??null);return{xs,step:B.step,g,a:fa,b:fb}}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -1128,6 +1148,102 @@ window.svZoomUI=function(){ui();const b=document.getElementById('sgReset');if(b)
  const h=document.getElementById('sgZt');const tip=window.SV_LANG==='es'?'Pellizcá con dos dedos para acercar/alejar':'Pinch with two fingers to zoom in/out';if(h)h.textContent=tip};
 if(document.querySelector(".sg-tog"))svZoomUI();
 })();
+</script>
+<script>// ===== Station tiles: tap a tile -> today's graph (midnight GMT-03 -> now) in a bottom sheet / modal =====
+(function(){const TZO=-3*3600e3,H=3600e3,$=id=>document.getElementById(id);
+const ES=()=>window.SV_LANG==='es',L=(en,es)=>ES()?es:en,num=v=>typeof v==='number'&&isFinite(v);
+const hh=ms=>{const d=new Date(ms+TZO);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')};
+const fx=(v,d=1)=>num(v)?(+v).toFixed(d).replace('.',ES()?',':'.'):'—';
+// tile key -> chart spec (series keys from station-series.json, 15-min slots)
+const SPEC={
+ 'Temperature':{t:['Air temperature','Temperatura del aire'],u:'°C',s:[{k:'t',c:'#d81e1e',n:['Temperature','Temperatura'],w:2}],band:['tn','tx','#e53030']},
+ 'Feels like':null,
+ 'Humidity':{t:['Relative humidity','Humedad relativa'],u:'%',d:0,min:0,max:100,s:[{k:'rh',c:'#e01ee0',n:['Humidity','Humedad'],w:1.8}]},
+ 'Dew point':{t:['Dew point','Punto de rocío'],u:'°C',s:[{k:'dp',c:'#4f9fd0',n:['Dew point','Punto de rocío'],w:1.8}]},
+ 'Wind':{t:['Wind (sensor at 2 m)','Viento (sensor a 2 m)'],u:'km/h',min:0,hmin:10,s:[{k:'g',c:'#8fcc4a',n:['Gusts','Ráfagas']},{k:'w',c:'#1d6b1d',n:['Wind speed','Velocidad del viento'],w:1.8}]},
+ 'Rain today':{t:['Rain today','Lluvia de hoy'],u:'mm',acc:'r',c:'#1f6fd0',d:1,hmin:1},
+ 'Rain last 24 h':null,
+ 'Reference ET today':{t:['Reference ET (ET0) today','ET de referencia (ET0) hoy'],u:'mm',acc:'e0',cum:1,c:'#f08a1c',d:2,hmin:.2},
+ 'Leaf wetness':{t:['Leaf wetness','Mojado foliar'],u:'%',d:0,min:0,max:100,s:[{k:'lw',c:'#3aa0a0',n:['Leaf wetness','Mojado foliar'],w:1.8,area:'#bfe6e6'}]},
+ 'Soil temp':{t:['Soil temperature','Temperatura del suelo'],u:'°C',s:[{k:'st',c:'#8a5a2b',n:['Soil temperature','Temperatura del suelo'],w:1.8}]},
+ 'Solar radiation':{t:['Solar radiation','Radiación solar'],u:'W/m²',d:0,min:0,hmin:250,s:[{k:'sr',c:'#e0b400',n:['Solar radiation','Radiación solar'],w:1.6,area:'#fff3a0'}],ss:1}
+};
+let S=null,cur=null,Z=null;
+async function load(){try{const r=await svFetchPriv('stationSeries','',{});if(r.ok)S=await r.json()}catch(e){}}
+window.addEventListener('svseries',e=>{S=e.detail;if(cur)draw()});
+function today(){if(!S||!S.q||!S.q.v)return null;const B=S.q,now=Date.now();
+ const m0=Math.floor((now+TZO)/864e5)*864e5-TZO; // local midnight GMT-03
+ const ix=[];for(let i=0;i<B.n;i++){const x=B.t0+i*B.step;if(x>=m0&&x<=now)ix.push(i)}
+ return{m0,now,step:B.step,xs:ix.map(i=>B.t0+i*B.step),g:k=>ix.map(i=>{const v=(B.v[k]||[])[i];return num(v)?v:null})}}
+const nice=(lo,hi,n)=>{if(!(hi>lo))hi=lo+1;const r=(hi-lo)/n,p=Math.pow(10,Math.floor(Math.log10(r))),s=[1,2,2.5,5,10].map(m=>m*p).find(m=>m>=r);return{lo:Math.floor(lo/s)*s,hi:Math.ceil(hi/s)*s,s}};
+function ext(xs,v,step){let mn=null,mx=null;v.forEach((y,i)=>{if(y==null)return;if(!mn||y<mn.v)mn={v:y,t:xs[i]};if(!mx||y>mx.v)mx={v:y,t:xs[i]}});return{mn,mx}}
+// hourly buckets: rain = sum of slot amounts; ET0 = increase of the cumulative value within the hour
+function hourly(D,k,cum){const v=D.g(k),out=[];let prev=0;
+ for(let h=D.m0;h<D.now;h+=H){const idx=D.xs.map((x,i)=>x>=h&&x<h+H?i:-1).filter(i=>i>=0&&v[i]!=null);
+  if(!idx.length){out.push({t:h,v:null});continue}
+  if(cum){const last=v[idx[idx.length-1]];out.push({t:h,v:Math.max(0,last-prev),c:last});prev=last}
+  else{const s=idx.reduce((a,i)=>a+v[i],0);prev+=s;out.push({t:h,v:s,c:prev})}}return out}
+function svg(D,P,mob){const W=mob?360:760,Ht=mob?220:280,pl=mob?36:46,pr=P.acc?(mob?36:46):12,pt=14,pb=24,iw=W-pl-pr,ih=Ht-pt-pb;
+ const a=Z?Z.a:D.m0,b=Z?Z.b:Math.max(D.now,D.m0+3*H),X=ms=>pl+iw*(ms-a)/(b-a);let g=`<rect x="${pl}" y="${pt}" width="${iw}" height="${ih}" fill="#fff"/>`;
+ let lines=[],bars=null,cl=null;
+ if(P.acc){bars=hourly(D,P.acc,P.cum);cl=bars.filter(o=>o.v!=null)}else lines=P.s.map(s=>({...s,v:D.g(s.k)}));
+ let vs=P.acc?bars.map(o=>o.v).filter(num):lines.flatMap(s=>s.v).filter(num);if(P.band)vs=vs.concat(D.g(P.band[0]),D.g(P.band[1])).filter(num);
+ let lo=P.min??Math.min(...vs),hi=P.max??Math.max(...vs);if(!vs.length){lo=P.min??0;hi=P.max??1}if(P.hmin!=null)hi=Math.max(hi,P.hmin);if(P.acc)lo=0;
+ const n=nice(lo,hi,mob?4:5),Y=v=>pt+ih*(1-(v-n.lo)/(n.hi-n.lo)),fs=mob?10:11;
+ for(let v=n.lo;v<=n.hi+1e-9;v+=n.s)g+=`<line x1="${pl}" x2="${pl+iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e6e9ec"/><text x="${pl-5}" y="${Y(v)+3.5}" font-size="${fs}" text-anchor="end" fill="#555">${fx(v,n.s<1?(n.s<.1?2:1):0)}</text>`;
+ let n2=null,Y2=null;if(P.acc){const cm=Math.max(P.hmin,...cl.map(o=>o.c));n2=nice(0,cm,mob?4:5);Y2=v=>pt+ih*(1-v/n2.hi);
+  for(let v=0;v<=n2.hi+1e-9;v+=n2.s)g+=`<text x="${pl+iw+5}" y="${Y2(v)+3.5}" font-size="${fs}" fill="#555">${fx(v,n2.s<1?(n2.s<.1?2:1):0)}</text>`}
+ const stp=(b-a)>12*H?(mob?6*H:3*H):(b-a)>4*H?(mob?2*H:H):H/2;
+ for(let x=Math.ceil((a+TZO)/stp)*stp-TZO;x<=b;x+=stp){const xx=X(x).toFixed(1);g+=`<line x1="${xx}" x2="${xx}" y1="${pt}" y2="${pt+ih}" stroke="#eceff2"/><text x="${xx}" y="${Ht-7}" font-size="${fs}" text-anchor="middle" fill="#555">${hh(x)}</text>`}
+ g+=`<defs><clipPath id="tgc"><rect x="${pl}" y="${pt}" width="${iw}" height="${ih}"/></clipPath></defs><g clip-path="url(#tgc)">`;
+ const path=(v,xs,off)=>{let d='',on=false;v.forEach((y,i)=>{if(y==null){on=false;return}d+=(on?'L':'M')+X(xs[i]+off).toFixed(1)+' '+Y(y).toFixed(1);on=true});return d};
+ if(P.band){const lo2=D.g(P.band[0]),hi2=D.g(P.band[1]);let top=[],bot=[];const fl=()=>{if(top.length>1)g+=`<path d="M${top.join('L')}L${bot.reverse().join('L')}Z" fill="${P.band[2]}" opacity=".2"/>`;top=[];bot=[]};
+  D.xs.forEach((x,i)=>{if(lo2[i]!=null&&hi2[i]!=null){const xx=X(x+D.step/2).toFixed(1);top.push(xx+' '+Y(hi2[i]).toFixed(1));bot.push(xx+' '+Y(lo2[i]).toFixed(1))}else fl()});fl()}
+ for(const s of lines){const d=path(s.v,D.xs,D.step/2);if(!d)continue;if(s.area){const segs=d.split('M').filter(Boolean);for(const q of segs){const p=q.split('L'),x0=p[0].split(' ')[0],x1=p[p.length-1].split(' ')[0];g+=`<path d="M${q}L${x1} ${Y(Math.max(n.lo,0))}L${x0} ${Y(Math.max(n.lo,0))}Z" fill="${s.area}" opacity=".8"/>`}}
+  g+=`<path d="${d}" fill="none" stroke="${s.c}" stroke-width="${s.w||1.6}" stroke-linejoin="round"/>`}
+ if(P.acc){const bw=iw*H/(b-a)*.7;bars.forEach(o=>{if(o.v>0)g+=`<rect x="${(X(o.t)+(iw*H/(b-a)-bw)/2).toFixed(1)}" y="${Y(o.v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(0)-Y(o.v)).toFixed(1)}" fill="${P.c}" opacity=".55"/>`});
+  if(cl.length){g+=`<path d="M${X(D.m0).toFixed(1)} ${Y2(0).toFixed(1)}`+cl.map(o=>'L'+X(Math.min(o.t+H,D.now)).toFixed(1)+' '+Y2(o.c).toFixed(1)).join('')+`" fill="none" stroke="${P.c}" stroke-width="2.2" stroke-linejoin="round"/>`}}
+ g+=`</g><rect x="${pl}" y="${pt}" width="${iw}" height="${ih}" fill="none" stroke="#ccd2d8"/>`;
+ return{html:`<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="${L(P.t[0],P.t[1])}">${g}</svg>`,lines,bars,cl,W,pl,iw,a,b}}
+function stat(lbl,e,u,d){return`<div class="tg-st"><span>${lbl}</span>${e&&e.mn?`<b>${L('min','mín.')} ${fx(e.mn.v,d)} ${u}</b> <small>${hh(e.mn.t)}</small> · <b>${L('max','máx.')} ${fx(e.mx.v,d)} ${u}</b> <small>${hh(e.mx.t)}</small>`:`<b>—</b>`}</div>`}
+function draw(){const P=SPEC[cur],box=$('tgBody'),mob=innerWidth<=600;$('tgTitle').innerHTML=`${L(P.t[0],P.t[1])}<span class="s">${L('Fondomonte station','Estación Fondomonte')} · ${L('Today','Hoy')} 00:00 – ${L('now','ahora')}${Z?` · ${L('Zoomed','Zoom')} ${hh(Z.a)}–${hh(Z.b)}`:''}</span>`;
+ const D=today(),st=window.SVST,ob=st&&st.observed?new Date(st.observed):null;
+ const upd=`<p class="tg-upd">${L('Last update','Última actualización')}: <b>${ob&&!isNaN(ob)?hh(+ob):'—'}</b> (GMT-03)${D&&D.xs.length?` · ${L('last reading in graph','última lectura del gráfico')} ${hh(D.xs[D.xs.length-1])}`:''}</p>`;
+ if(!D||!D.xs.length){box.innerHTML=`<p class="tg-empty">${L('No data yet for today.','Todavía no hay datos de hoy.')}</p>`+upd;return}
+ const C=svg(D,P,mob);let leg='',sts='';
+ if(P.acc){const tot=C.cl.length?C.cl[C.cl.length-1].c:null,hv=C.bars.filter(o=>o.v!=null),mx=hv.length?hv.reduce((a,o)=>o.v>a.v?o:a):null;
+  leg=`<span><i style="background:${P.c};opacity:.55"></i>${L('Hourly','Por hora')} [${P.u}]</span><span><i style="background:${P.c}"></i>${L('Cumulative since midnight','Acumulado desde medianoche')} [${P.u}]</span>`;
+  sts=`<div class="tg-st"><span>${L('Total today','Total de hoy')}</span><b>${tot==null?'—':fx(tot,P.d)+' '+P.u}</b></div><div class="tg-st"><span>${L('Wettest hour','Hora máxima')}</span>${mx&&mx.v>0?`<b>${fx(mx.v,P.d)} ${P.u}</b> <small>${hh(mx.t)}–${hh(mx.t+H)}</small>`:`<b>—</b> <small>${P.acc==='r'?L('no rain yet','sin lluvia aún'):''}</small>`}</div>`;
+  if(P.acc==='e0')sts=sts.replace(L('Wettest hour','Hora máxima'),L('Highest hour','Hora máxima'))}
+ else{leg=C.lines.map(s=>`<span><i style="background:${s.c}"></i>${L(s.n[0],s.n[1])} [${P.u}]</span>`).join('')+(P.band?`<span><i style="background:${P.band[2]};opacity:.3"></i>${L('15-min min–max','mín.–máx. 15 min')}</span>`:'');
+  sts=C.lines.map(s=>{let e=ext(D.xs,s.v);if(P.band){const lo=ext(D.xs,D.g(P.band[0])),hi=ext(D.xs,D.g(P.band[1]));if(lo.mn&&hi.mx)e={mn:lo.mn,mx:hi.mx}}return stat(L(s.n[0],s.n[1]),e,P.u,P.d??1)}).join('');
+  if(P.ss){const ss=D.g('ss').filter(num);sts+=`<div class="tg-st"><span>${L('Sunshine today','Horas de sol hoy')}</span><b>${ss.length?fx(ss.reduce((a,v)=>a+v,0)/60,1)+' h':'—'}</b></div>`}}
+ box.innerHTML=`<div class="tg-w">${C.html}</div><div class="sg-lg2 tg-lg">${leg}</div><div class="tg-sts">${sts}</div>`+upd+`<p class="tg-hint">${L('Pinch or Ctrl+scroll to zoom · double-tap to reset','Pellizcá o Ctrl+rueda para hacer zoom · doble toque para restablecer')}</p>`;
+ box._c=C}
+function open(k){if(!SPEC[k])return;cur=k;Z=null;const bg=$('tgBg');bg.hidden=false;requestAnimationFrame(()=>bg.classList.add('on'));document.body.style.overflow='hidden';draw();if(!S)load().then(()=>cur&&draw());$('tgX').focus()}
+function close(){const bg=$('tgBg');if(!bg||bg.hidden)return;bg.classList.remove('on');bg.hidden=true;document.body.style.overflow='';const k=cur;cur=null;Z=null;const t=document.querySelector(`#nowg>[data-k="${k}"]`);t&&t.focus()}
+function ui(){if($('tgBg'))return;document.body.insertAdjacentHTML('beforeend',`<div class="tg-bg" id="tgBg" hidden><div class="tg-m" role="dialog" aria-modal="true" aria-labelledby="tgTitle"><div class="tg-h"><span class="tg-grab" aria-hidden="true"></span><h3 id="tgTitle"></h3><button type="button" class="tg-x" id="tgX" aria-label="Close">✕</button></div><div id="tgBody"></div></div></div>`);
+ const bg=$('tgBg');bg.addEventListener('click',e=>{if(e.target===bg)close()});$('tgX').onclick=close;
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur)close()});
+ // zoom (same gestures as the station graphs): pinch, Ctrl/⌘+wheel, double-tap/double-click reset
+ const body=$('tgBody'),fr=(cx)=>{const c=body._c,sv=body.querySelector('svg');if(!c||!sv)return null;const r=sv.getBoundingClientRect();const f=Math.max(0,Math.min(1,((cx-r.left)*c.W/r.width-c.pl)/c.iw));return{f,t:c.a+f*(c.b-c.a),c}};
+ const setZ=(a,b)=>{const D=today();if(!D)return;const fa=D.m0,fb=Math.max(D.now,D.m0+3*H),s=Math.max(H,b-a);if(s>=(fb-fa)*.999){Z=null}else{a=Math.max(fa,Math.min(a,fb-s));Z={a,b:a+s}}draw()};
+ body.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;const g=fr(e.clientX);if(!g)return;e.preventDefault();const s=(g.c.b-g.c.a)*Math.exp(e.deltaY*.01);setZ(g.t-g.f*s,g.t-g.f*s+s)},{passive:false});
+ let p0=null;body.addEventListener('touchstart',e=>{if(e.touches.length===2){const T=e.touches,g=fr((T[0].clientX+T[1].clientX)/2);if(g){p0={d:Math.abs(T[0].clientX-T[1].clientX)||1,g};e.preventDefault()}}},{passive:false});
+ body.addEventListener('touchmove',e=>{if(!p0||e.touches.length!==2)return;e.preventDefault();const T=e.touches,d=Math.abs(T[0].clientX-T[1].clientX)||1,s=(p0.g.c.b-p0.g.c.a)*p0.d/d;setZ(p0.g.t-p0.g.f*s,p0.g.t-p0.g.f*s+s)},{passive:false});
+ body.addEventListener('touchend',e=>{if(e.touches.length<2)p0=null});
+ let lt=0;body.addEventListener('touchend',e=>{if(!e.target.closest('svg')||e.touches.length)return;const n=Date.now();if(n-lt<300&&Z){Z=null;draw()}lt=n});
+ body.addEventListener('dblclick',e=>{if(Z&&e.target.closest('svg')){Z=null;draw()}});
+ document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{if(cur)draw();mark()},0)))}
+// tile affordance + click (capture so the tile tap doesn't also trigger the section's "scroll to graphs")
+function mark(){document.querySelectorAll('#nowg>[data-k]').forEach(n=>{const ok=!!SPEC[n.dataset.k];n.classList.toggle('tg-on',ok);if(!ok)return;n.tabIndex=0;n.setAttribute('role','button');n.setAttribute('aria-label',n.dataset.k+' – '+L('tap for graph','tocá para ver el gráfico'));n.title=L('Tap for today\'s graph','Tocá para ver el gráfico de hoy');
+ if(!n.querySelector('.tg-ic'))n.insertAdjacentHTML('beforeend','<i class="tg-ic" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 13h12M3 10l3-3 3 2 4-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>')})}
+function init(){ui();const g=$('nowg');if(!g)return;new MutationObserver(mark).observe(g,{childList:true});mark();
+ g.addEventListener('click',e=>{const n=e.target.closest('#nowg>[data-k]');if(n&&SPEC[n.dataset.k]){e.stopPropagation();open(n.dataset.k)}},true);
+ g.addEventListener('keydown',e=>{const n=e.target.closest('#nowg>[data-k]');if(n&&SPEC[n.dataset.k]&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopPropagation();open(n.dataset.k)}},true)}
+window.addEventListener('svstation',mark);
+if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
+window.svTileGraph=open;})();
 </script>
 <script type="module">
 // ---- Firebase Auth gate: User ID (+ real email for recovery) & password; usernames/{id} in Firestore maps ID -> email ----
