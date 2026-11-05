@@ -796,7 +796,7 @@ function tip(e){const w=e.target.closest('.sg-w');if(!w)return;const c=CH[+w.dat
  if(sx<c.pl||sx>c.pl+c.iw){ln.setAttribute('visibility','hidden');tt.hidden=true;return}const ms=c.D.a+(sx-c.pl)/c.iw*(c.D.b-c.D.a);let i=Math.floor((ms-c.D.xs[0])/c.D.step);i=Math.max(0,Math.min(c.D.xs.length-1,i));const x=c.X(c.D.xs[i]+c.D.step/2);
  ln.setAttribute('x1',x);ln.setAttribute('x2',x);ln.setAttribute('visibility','visible');
  tt.innerHTML=`<b>${dlab(c.D.xs[i])} ${hh(c.D.xs[i])}–${hh(c.D.xs[i]+c.D.step)}</b>`+c.S.filter(s=>s.name).map(s=>`<div><i style="background:${s.c}"></i>${s.name}: <b>${s.v[i]==null?'—':fm(s.v[i],s.d??1)}</b> ${s.u||''}</div>`).join('');tt.hidden=false;
- const px=x/c.W*r.width,wr=w.getBoundingClientRect();tt.style.top=(r.top-wr.top+20)+'px';tt.style.left=(px>r.width/2?Math.max(0,px-tt.offsetWidth-12):px+12)+'px'}
+ const px=x/c.W*r.width,wr=w.getBoundingClientRect();tt.style.top=(r.top-wr.top+20)+'px';tt.style.left=(px>r.width/2?Math.max(0,px-tt.offsetWidth-12):Math.max(0,Math.min(r.width-tt.offsetWidth,px+12)))+'px'}
 let S0={};
 function render(){document.querySelectorAll('.sg-tog button').forEach(b=>b.classList.toggle('on',b.dataset.r===R));const D=slice();S0=S||{};CH.length=0;
  if(!D||!D.xs.length){document.getElementById('sgTitle').textContent=t('Station graphs');body.innerHTML=`<p>${t('Graph data not available yet. Try Refresh in a few minutes.')}</p>`;return}
@@ -819,7 +819,7 @@ document.getElementById('sgX').onclick=close;bg.addEventListener('click',e=>{if(
 document.addEventListener('keydown',e=>{if(bg.classList.contains('on')&&e.key==='Escape')close()});
 document.querySelector('.sg-tog').addEventListener('click',e=>{const r=e.target.closest('button')?.dataset.r;if(r){R=r;render()}});
 document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>{if(bg.classList.contains('on'))render()}));
-body.addEventListener('pointermove',tip);body.addEventListener('pointerdown',tip);body.addEventListener('pointerleave',()=>body.querySelectorAll('.sg-tt').forEach(x=>x.hidden=true));window.svStationGraphs=open;window.svCH=CH;window.svSgRender=()=>{if(S)render()};load();document.getElementById('refresh').addEventListener('click',load);setInterval(load,5*60e3)})();
+body.addEventListener('pointermove',tip);body.addEventListener('pointerdown',tip);const sgHide=()=>body.querySelectorAll('.sg-w').forEach(w=>{w.querySelector('.sg-tt').hidden=true;w.querySelector('.sg-x')?.setAttribute('visibility','hidden')});body.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')sgHide()});document.addEventListener('pointerdown',e=>{if(!e.target.closest||!e.target.closest('#sgBody .sg-w svg'))sgHide()},true);window.svStationGraphs=open;window.svCH=CH;window.svSgRender=()=>{if(S)render()};load();document.getElementById('refresh').addEventListener('click',load);setInterval(load,5*60e3)})();
 </script>
 <script>
 function svAnchorDay(bg,doScroll){if(innerWidth<=600){bg.classList.remove('anch');bg.style.top='';const h0=bg.querySelector('.hm');if(h0){h0.style.left='';h0.style.width=''}return}const tg=document.querySelector('.rtog'),now=document.getElementById('now');if(!tg)return;
@@ -1126,7 +1126,6 @@ function geo(el,cx){const w=el.closest&&el.closest('.sg-w');if(!w)return null;co
 document.addEventListener('touchstart',e=>{const tg=e.target;if(!tg.closest||!tg.closest('#sgBody .sg-w svg'))return;
  const T=e.touches;let st=null;
  if(T.length===2){const cx=(T[0].clientX+T[1].clientX)/2,g=geo(tg,cx);if(!g)return;st={m:2,d0:Math.abs(T[0].clientX-T[1].clientX)||1,g,span:g.b-g.a};e.preventDefault()}
- else if(T.length===1&&window.SVZ){const g=geo(tg,T[0].clientX);if(!g)return;st={m:1,x0:T[0].clientX,y0:T[0].clientY,g,span:g.b-g.a,dir:0}}
  if(!st)return;
  const mv=ev=>{const U=ev.touches;
   if(U.length===2){if(st.m!==2){const cx=(U[0].clientX+U[1].clientX)/2,g=geo(tg,cx)||st.g;st={m:2,d0:Math.abs(U[0].clientX-U[1].clientX)||1,g,span:(window.SVZ?SVZ.b-SVZ.a:g.b-g.a)};}
@@ -1146,7 +1145,7 @@ document.addEventListener('mousedown',e=>{if(!window.SVZ||e.button)return;const 
 let tg0=null;function ui(){const tog=document.querySelector('.sg-tog');if(tog&&tog!==tg0){tg0=tog;tog.addEventListener('click',e=>{if(e.target.closest('button[data-r]'))window.SVZ=null},true)}
  const zh=document.getElementById('sgZh');if(!zh||document.getElementById('sgReset'))return;const sp=document.createElement('span');sp.id='sgZt';zh.appendChild(sp);const b=document.createElement('button');b.type='button';b.id='sgReset';b.className='sg-reset';b.hidden=true;zh.appendChild(b);b.addEventListener('click',e=>{e.stopPropagation();window.SVZ=null;rr()})}
 window.svZoomUI=function(){ui();const b=document.getElementById('sgReset');if(b){b.hidden=!window.SVZ;b.textContent='⤺ '+(window.SV_LANG==='es'?'Restablecer zoom':'Reset zoom')}
- const h=document.getElementById('sgZt');const tip=window.SV_LANG==='es'?'Pellizcá con dos dedos para acercar/alejar':'Pinch with two fingers to zoom in/out';if(h)h.textContent=tip};
+ const h=document.getElementById('sgZt');const tip=window.SV_LANG==='es'?'Tocá o deslizá un dedo para ver valores · pellizcá o arrastrá con dos dedos para zoom y desplazar':'Touch or slide one finger for values · pinch or drag with two fingers to zoom and pan';if(h)h.textContent=tip};
 if(document.querySelector(".sg-tog"))svZoomUI();
 })();
 </script>
@@ -1219,7 +1218,7 @@ function draw(){const P=SPEC[cur],box=$('tgBody'),mob=innerWidth<=600;$('tgTitle
  else{leg=C.lines.map(s=>`<span><i style="background:${s.c}"></i>${L(s.n[0],s.n[1])} [${P.u}]</span>`).join('')+(P.band?`<span><i style="background:${P.band[2]};opacity:.3"></i>${L('15-min min–max','mín.–máx. 15 min')}</span>`:'');
   sts=C.lines.map(s=>{let e=ext(D.xs,s.v);if(P.band){const lo=ext(D.xs,D.g(P.band[0])),hi=ext(D.xs,D.g(P.band[1]));if(lo.mn&&hi.mx)e={mn:lo.mn,mx:hi.mx}}return stat(L(s.n[0],s.n[1]),e,P.u,P.d??1)}).join('');
   if(P.ss){const ss=D.g('ss').filter(num);sts+=`<div class="tg-st"><span>${L('Sunshine today','Horas de sol hoy')}</span><b>${ss.length?fx(ss.reduce((a,v)=>a+v,0)/60,1)+' h':'—'}</b></div>`}}
- box.innerHTML=`<div class="tg-w">${C.html}<div class="sg-tt tg-tt" hidden></div></div><div class="sg-lg2 tg-lg">${leg}</div><div class="tg-sts">${sts}</div>`+upd+`<p class="tg-hint">${L('Touch or hover the graph for values · pinch or Ctrl+scroll to zoom · double-tap to reset','Tocá o pasá el cursor por el gráfico para ver valores · pellizcá o Ctrl+rueda para zoom · doble toque para restablecer')}</p>`;
+ box.innerHTML=`<div class="tg-w">${C.html}<div class="sg-tt tg-tt" hidden></div></div><div class="sg-lg2 tg-lg">${leg}</div><div class="tg-sts">${sts}</div>`+upd+`<p class="tg-hint">${L('Touch or slide one finger for values · pinch or drag with two fingers to zoom and pan · double-tap to reset','Tocá o deslizá un dedo para ver valores · pellizcá o arrastrá con dos dedos para zoom y desplazar · doble toque para restablecer')}</p>`;
  C.D=D;C.P=P;box._c=C}
 // crosshair + readout (same behaviour/style as the Station graphs: hover, or touch and drag along the graph)
 function tip(e,body){const C=body._c,w=body.querySelector('.tg-w'),sv=w&&w.querySelector('svg');if(!C||!sv)return;const ln=sv.querySelector('.sg-x'),dots=sv.querySelector('.tg-dots'),tt=w.querySelector('.tg-tt');
@@ -1244,12 +1243,12 @@ function ui(){if($('tgBg'))return;document.body.insertAdjacentHTML('beforeend',`
  const body=$('tgBody'),fr=(cx)=>{const c=body._c,sv=body.querySelector('svg');if(!c||!sv)return null;const r=sv.getBoundingClientRect();const f=Math.max(0,Math.min(1,((cx-r.left)*c.W/r.width-c.pl)/c.iw));return{f,t:c.a+f*(c.b-c.a),c}};
  const setZ=(a,b)=>{const D=today();if(!D)return;const fa=D.m0,fb=Math.max(D.now,D.m0+3*H),s=Math.max(H,b-a);if(s>=(fb-fa)*.999){Z=null}else{a=Math.max(fa,Math.min(a,fb-s));Z={a,b:a+s}}draw()};
  body.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;const g=fr(e.clientX);if(!g)return;e.preventDefault();const s=(g.c.b-g.c.a)*Math.exp(e.deltaY*.01);setZ(g.t-g.f*s,g.t-g.f*s+s)},{passive:false});
- let p0=null;body.addEventListener('touchstart',e=>{if(e.touches.length===2){const T=e.touches,g=fr((T[0].clientX+T[1].clientX)/2);if(g){p0={d:Math.abs(T[0].clientX-T[1].clientX)||1,g};e.preventDefault()}}},{passive:false});
- body.addEventListener('touchmove',e=>{if(!p0||e.touches.length!==2)return;e.preventDefault();const T=e.touches,d=Math.abs(T[0].clientX-T[1].clientX)||1,s=(p0.g.c.b-p0.g.c.a)*p0.d/d;setZ(p0.g.t-p0.g.f*s,p0.g.t-p0.g.f*s+s)},{passive:false});
+ let p0=null;body.addEventListener('touchstart',e=>{if(e.touches.length===2){const T=e.touches,g=fr((T[0].clientX+T[1].clientX)/2);if(g){p0={d:Math.abs(T[0].clientX-T[1].clientX)||1,g,r:body.querySelector('svg').getBoundingClientRect()};hide(body);e.preventDefault()}}},{passive:false});
+ body.addEventListener('touchmove',e=>{if(!p0||e.touches.length!==2)return;e.preventDefault();const T=e.touches,d=Math.abs(T[0].clientX-T[1].clientX)||1,s=(p0.g.c.b-p0.g.c.a)*p0.d/d,c=p0.g.c,f=Math.max(0,Math.min(1,(((T[0].clientX+T[1].clientX)/2-p0.r.left)*c.W/p0.r.width-c.pl)/c.iw));setZ(p0.g.t-f*s,p0.g.t-f*s+s)},{passive:false});
  body.addEventListener('touchend',e=>{if(e.touches.length<2)p0=null});
  let np=0;const pd=new Set();body.addEventListener('pointerdown',e=>{pd.add(e.pointerId);if(pd.size>1){hide(body);return}if(e.target.closest('svg'))tip(e,body)});
  body.addEventListener('pointermove',e=>{if(pd.size>1||p0)return;if(e.pointerType==='touch'&&!pd.has(e.pointerId))return;if(e.target.closest('.tg-w'))tip(e,body)});
- const pu=e=>{pd.delete(e.pointerId)};body.addEventListener('pointerup',pu);body.addEventListener('pointercancel',e=>{pu(e);hide(body)});body.addEventListener('pointerleave',e=>{pu(e);if(e.pointerType==='mouse')hide(body)});
+ const pu=e=>{pd.delete(e.pointerId)};body.addEventListener('pointerup',pu);body.addEventListener('pointercancel',pu);document.addEventListener('pointerdown',e=>{if(cur&&!e.target.closest('#tgBody svg'))hide(body)},true);body.addEventListener('pointerleave',e=>{pu(e);if(e.pointerType==='mouse')hide(body)});
  let lt=0;body.addEventListener('touchend',e=>{if(!e.target.closest('svg')||e.touches.length)return;const n=Date.now();if(n-lt<300&&Z){Z=null;draw()}lt=n});
  body.addEventListener('dblclick',e=>{if(Z&&e.target.closest('svg')){Z=null;draw()}});
  document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{if(cur)draw();mark()},0)))}
