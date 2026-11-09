@@ -1246,7 +1246,7 @@ function ui(){if($('tgBg'))return;document.body.insertAdjacentHTML('beforeend',`
  let p0=null;body.addEventListener('touchstart',e=>{if(e.touches.length===2){const T=e.touches,g=fr((T[0].clientX+T[1].clientX)/2);if(g){p0={d:Math.abs(T[0].clientX-T[1].clientX)||1,g,r:body.querySelector('svg').getBoundingClientRect()};hide(body);e.preventDefault()}}},{passive:false});
  body.addEventListener('touchmove',e=>{if(!p0||e.touches.length!==2)return;e.preventDefault();const T=e.touches,d=Math.abs(T[0].clientX-T[1].clientX)||1,s=(p0.g.c.b-p0.g.c.a)*p0.d/d,c=p0.g.c,f=Math.max(0,Math.min(1,(((T[0].clientX+T[1].clientX)/2-p0.r.left)*c.W/p0.r.width-c.pl)/c.iw));setZ(p0.g.t-f*s,p0.g.t-f*s+s)},{passive:false});
  body.addEventListener('touchend',e=>{if(e.touches.length<2)p0=null});
- let np=0;const pd=new Set();body.addEventListener('pointerdown',e=>{pd.add(e.pointerId);if(pd.size>1){hide(body);return}if(e.target.closest('svg'))tip(e,body)});
+ const pd=new Set();body.addEventListener('pointerdown',e=>{pd.add(e.pointerId);if(pd.size>1){hide(body);return}if(e.target.closest('svg'))tip(e,body)});
  body.addEventListener('pointermove',e=>{if(pd.size>1||p0)return;if(e.pointerType==='touch'&&!pd.has(e.pointerId))return;if(e.target.closest('.tg-w'))tip(e,body)});
  const pu=e=>{pd.delete(e.pointerId)};body.addEventListener('pointerup',pu);body.addEventListener('pointercancel',pu);document.addEventListener('pointerdown',e=>{if(cur&&!e.target.closest('#tgBody svg'))hide(body)},true);body.addEventListener('pointerleave',e=>{pu(e);if(e.pointerType==='mouse')hide(body)});
  let lt=0;body.addEventListener('touchend',e=>{if(!e.target.closest('svg')||e.touches.length)return;const n=Date.now();if(n-lt<300&&Z){Z=null;draw()}lt=n});
