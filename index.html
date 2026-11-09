@@ -1253,7 +1253,7 @@ function ui(){if($('tgBg'))return;document.body.insertAdjacentHTML('beforeend',`
  body.addEventListener('dblclick',e=>{if(Z&&e.target.closest('svg')){Z=null;draw()}});
  document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{if(cur)draw();mark()},0)))}
 // tile affordance + click (capture so the tile tap doesn't also trigger the section's "scroll to graphs")
-function mark(){document.querySelectorAll('#nowg>[data-k]').forEach(n=>{const ok=!!SPEC[n.dataset.k];n.classList.toggle('tg-on',ok);if(!ok)return;n.tabIndex=0;n.setAttribute('role','button');n.setAttribute('aria-label',n.dataset.k+' – '+L('tap for graph','tocá para ver el gráfico'));n.title=L('Tap for today\'s graph','Tocá para ver el gráfico de hoy');
+function mark(){document.querySelectorAll('#nowg>[data-k]').forEach(n=>{const ok=!!SPEC[n.dataset.k];n.classList.toggle('tg-on',ok);if(!ok)return;n.tabIndex=0;n.setAttribute('role','button');n.setAttribute('aria-label',((n.querySelector('span')||{}).textContent||n.dataset.k).trim()+' – '+L('tap for graph','tocá para ver el gráfico'));n.title=L('Tap for today\'s graph','Tocá para ver el gráfico de hoy');
  if(!n.querySelector('.tg-ic'))n.insertAdjacentHTML('beforeend','<i class="tg-ic" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 13h12M3 10l3-3 3 2 4-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></i>')})}
 function init(){ui();const g=$('nowg');if(!g)return;new MutationObserver(mark).observe(g,{childList:true});mark();
  g.addEventListener('click',e=>{const n=e.target.closest('#nowg>[data-k]');if(n&&SPEC[n.dataset.k]){e.stopPropagation();open(n.dataset.k)}},true);
