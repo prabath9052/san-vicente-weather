@@ -53,7 +53,78 @@ def calc(yd, now):
     elif S["tmin"] is not None and S["tmin"] < 4: notes.append(("gfrost", S["tmin"]))
     S["notes"] = notes
     S["hrs"] = [(int(k[11:13]), H[k]) for k in sorted(H) if k.startswith(ys)]
+    try: extra(S, ys, rows, H)
+    except Exception as e: print("summary: extra details skipped:", type(e).__name__)
     return S
+SERIES = "data/station-series.json"
+def day_rows(ys):
+    """(end-of-interval datetime, row) for the local day: 15-min buckets when >= 80 of 96 exist, else hourly buckets."""
+    for key, need in (("q", 80), ("h", 22)):
+        try: b = json.load(open(SERIES))[key]
+        except Exception: continue
+        out = []
+        for i in range(b["n"]):
+            t0 = dt.datetime.fromtimestamp((b["t0"] + i * b["step"]) / 1000, TZ)
+            if t0.date().isoformat() != ys: continue
+            row = {k: (v[i] if i < len(v) else None) for k, v in b["v"].items()}
+            if row.get("t") is not None: out.append((t0 + dt.timedelta(milliseconds=b["step"]), row))
+        if len(out) >= need: return out, b["step"]
+    return [], None
+def hm(t):  # interval end as HH:MM, local midnight -> 24:00
+    return "24:00" if (t.hour, t.minute) == (0, 0) else t.strftime("%H:%M")
+def at(R, k, f):
+    v = [(r[k], t) for t, r in R if r.get(k) is not None]
+    if not v: return None, None
+    x = f(v, key=lambda a: a[0]); return x[0], hm(x[1])
+def extra(S, ys, rows, H):
+    R, step = day_rows(ys); r1 = lambda x, n=1: round(x, n) if x is not None else None
+    # 1. times of extremes (bucket where the max/min raw record fell; reported as the end of that 15-min interval)
+    if R:
+        S["tmax_at"] = at(R, "tx" if any(r.get("tx") is not None for _, r in R) else "t", max)[1]
+        S["tmin_at"] = at(R, "tn" if any(r.get("tn") is not None for _, r in R) else "t", min)[1]
+        S["gust_at"] = at(R, "g", max)[1] if S.get("gust") is not None else None
+    # 2. rain detail (hourly totals; only when it rained)
+    hr = [(k, H[k].get("r")) for k in sorted(H) if k.startswith(ys) and H[k].get("r") is not None]
+    if (S.get("rain") or 0) > 0 and hr:
+        wet = [(k, v) for k, v in hr if v >= 0.1]
+        if wet:
+            k, v = max(wet, key=lambda a: a[1]); h0 = int(k[11:13])
+            S["rain_hours"] = len(wet); S["rain_peak"] = r1(v); S["rain_peak_at"] = f"{h0:02d}:00–{h0 + 1:02d}:00"
+    # 3. humidity range with times + dew point
+    if R:
+        mn, tmn = at(R, "rh", min); mx, tmx = at(R, "rh", max)
+        if mn is not None: S["rhmin"], S["rhmin_at"], S["rhmax"], S["rhmax_at"] = r1(mn, 0), tmn, r1(mx, 0), tmx
+        dp = [r["dp"] for _, r in R if r.get("dp") is not None]
+        if dp: S["dpmin"], S["dpmean"], S["dpmax"] = r1(min(dp)), r1(stt.mean(dp)), r1(max(dp))
+    # 4. main wind direction: speed-weighted vector mean of the interval directions (direction the wind blows FROM)
+    vw = [(r["w"], r["wd"]) for _, r in R if r.get("w") is not None and r.get("wd") is not None]
+    if vw and sum(w for w, _ in vw) > 0:
+        import math
+        x = sum(w * math.sin(math.radians(d)) for w, d in vw); y = sum(w * math.cos(math.radians(d)) for w, d in vw)
+        S["wdir"] = round(math.degrees(math.atan2(x, y)) % 360); S["wdir_steady"] = round(math.hypot(x, y) / sum(w for w, _ in vw), 2)
+    # 5. solar radiation total (MJ/m2) from interval means (W/m2); needs >= 90 % of the day's intervals
+    sr = [r["sr"] for _, r in R if r.get("sr") is not None]
+    if step and len(sr) >= 0.9 * 86400000 / step: S["solar"] = r1(sum(max(0, v) for v in sr) * step / 1000 / 1e6)
+    # 6. soil temperature (probe 20496238-1; placement not yet confirmed on site)
+    st = [r["st"] for _, r in R if r.get("st") is not None]
+    if st: S["stmin"], S["stmax"] = r1(min(st)), r1(max(st))
+    # 7. month-to-date rain + ET0: station hourly series (current + HIST_FILES) per day, else stored daily
+    #    observations in data/verification.json; the summary day itself uses the values shown in this email
+    d = dt.date.fromisoformat(ys); HA = hourly_station([f for f in (E("HIST_FILES") or "").split(":") if f] + [SERIES])
+    try: V = {x["d"]: x.get("o") or {} for x in json.load(open("data/verification.json")).get("days", [])}
+    except Exception: V = {}
+    rain = et = 0.0; n = 0; src = set(); day = d.replace(day=1)
+    while day <= d:
+        k = day.isoformat(); rr = [HA[h] for h in sorted(HA) if h.startswith(k)]
+        if k == ys: r_, e_, s_ = S.get("rain"), S.get("et0"), "email"
+        elif len(rr) >= 22:
+            e0 = [x["e0"] for x in rr if x.get("e0") is not None]
+            r_, e_, s_ = sum(x["r"] for x in rr if x.get("r") is not None), (max(e0) if e0 else None), "series"
+        else: r_, e_, s_ = V.get(k, {}).get("rain"), V.get(k, {}).get("et0"), "verification"
+        if r_ is not None and e_ is not None: rain += r_; et += e_; n += 1; src.add(s_)
+        day += dt.timedelta(days=1)
+    if n: S["mtd"] = {"rain": r1(rain), "et0": r1(et), "days": n, "of": d.day, "src": sorted(src)}
+    print("summary: month-to-date from", sorted(src), n, "of", d.day, "days")
 L = {"es": {"tmax": "Temperatura máxima", "tmin": "Temperatura mínima", "rain": "Lluvia", "wmean": "Viento medio (2 m)",
             "wmax": "Viento máximo (2 m, media horaria)", "gust": "Ráfaga máxima", "rhmean": "Humedad media", "rhmin": "Humedad mínima",
             "et0": "ET0 de referencia (pasto)", "sun": "Horas de sol", "title": "Resumen del día", "na": "s/d",
@@ -77,11 +148,48 @@ DOWN = {"es": "lunes martes miércoles jueves viernes sábado domingo".split(), 
 TX = {"es": {"day": "Resumen del día", "rainw": "lluvia", "temp": "Temperatura máx. / mín.", "rain": "Lluvia", "et0": "ET0 de referencia", "wind": "Viento (2 m)",
              "mean": "media", "max": "máx", "gust": "ráfaga", "grass": "pasto", "hum": "Humedad media / mínima", "sun": "Horas de sol",
              "chart": "Temperatura por hora",
+             "x_t": "Hora de la máx. / mín.", "x_g": "Ráfaga máxima", "x_at": "a las", "x_r": "Detalle de la lluvia",
+             "x_rh": "{} h con lluvia · hora más intensa {} mm ({})", "x_hum": "Humedad media / mín. / máx.",
+             "x_dp": "Punto de rocío mín. / medio / máx.", "x_wd": "Dirección principal del viento", "x_sun": "Horas de sol · radiación solar",
+             "x_st": "Temperatura del suelo mín. / máx.", "x_stn": "(ubicación de la sonda aún no confirmada)",
+             "x_m": "Acumulado del mes ({}): lluvia / ET0", "x_md": "{} de {} días con datos",
+             "x_dir": ["norte", "noreste", "este", "sureste", "sur", "suroeste", "oeste", "noroeste"],
+             "x_most": "Mayormente del {}", "x_var": "Variable, predominio del {}",
              "src": "Datos de la estación San Vicente, San Alberto, Córdoba", "gen": "Generado"},
       "en": {"day": "Daily summary", "rainw": "rain", "temp": "Temperature max / min", "rain": "Rain", "et0": "Reference ET0", "wind": "Wind (2 m)",
              "mean": "mean", "max": "max", "gust": "gust", "grass": "grass", "hum": "Mean / min humidity", "sun": "Sunshine hours",
              "chart": "Hourly temperature",
+             "x_t": "Time of max / min", "x_g": "Strongest gust", "x_at": "at", "x_r": "Rain detail",
+             "x_rh": "{} h with rain · heaviest hour {} mm ({})", "x_hum": "Humidity mean / min / max",
+             "x_dp": "Dew point min / mean / max", "x_wd": "Main wind direction", "x_sun": "Sunshine hours · solar radiation",
+             "x_st": "Soil temperature min / max", "x_stn": "(probe placement not yet confirmed)",
+             "x_m": "Month to date ({}): rain / ET0", "x_md": "{} of {} days with data",
+             "x_dir": ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"],
+             "x_most": "Mostly from the {}", "x_var": "Variable, mainly from the {}",
              "src": "Station data – San Vicente, San Alberto, Córdoba", "gen": "Generated"}}
+MON = {"es": "ene feb mar abr may jun jul ago sep oct nov dic".split(), "en": "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()}
+SECT = "N NE E SE S SW W NW".split()
+def extras(S, l):
+    """New detail rows [(label key, value text, note)] for language l; rows with missing data are left out."""
+    t = TX[l]; o = []; d = dt.date.fromisoformat(S["date"])
+    if S.get("tmax_at") and S.get("tmin_at"): o.append(("x_t", f'{S["tmax_at"]} / {S["tmin_at"]}', ""))
+    if S.get("gust") is not None and S.get("gust_at"): o.append(("x_g", f'{num(S["gust"], l)} km/h {t["x_at"]} {S["gust_at"]}', ""))
+    if S.get("rain_hours"): o.append(("x_r", t["x_rh"].format(S["rain_hours"], num(S["rain_peak"], l), S["rain_peak_at"]), ""))
+    if S.get("rhmax") is not None:
+        o.append(("x_hum", f'{num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} % ({S["rhmin_at"]}) / {num(S["rhmax"], l, 0)} % ({S["rhmax_at"]})', ""))
+    elif S.get("rhmean") is not None: o.append(("hum", f'{num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', ""))
+    if S.get("dpmin") is not None: o.append(("x_dp", f'{num(S["dpmin"], l)} / {num(S["dpmean"], l)} / {num(S["dpmax"], l)} °C', ""))
+    if S.get("wdir") is not None:
+        i = int((S["wdir"] + 22.5) // 45) % 8
+        o.append(("x_wd", (t["x_most"] if S["wdir_steady"] >= 0.3 else t["x_var"]).format(t["x_dir"][i]) + f' ({SECT[i] if l == "en" else SECT[i].replace("W", "O")})', ""))
+    if S.get("sun") is not None or S.get("solar") is not None:
+        o.append(("x_sun", " · ".join(x for x in (f'{num(S["sun"], l)} h' if S.get("sun") is not None else "", f'{num(S["solar"], l)} MJ/m²' if S.get("solar") is not None else "") if x), ""))
+    if S.get("stmin") is not None: o.append(("x_st", f'{num(S["stmin"], l)} / {num(S["stmax"], l)} °C', t["x_stn"]))
+    m = S.get("mtd")
+    if m:
+        rng = f'1–{d.day} {MON[l][d.month - 1]}'
+        o.append(("x_m", f'{num(m["rain"], l)} mm / {num(m["et0"], l)} mm', "" if m["days"] == m["of"] else t["x_md"].format(m["days"], m["of"]), rng))
+    return [x if len(x) == 4 else x + (None,) for x in o]
 BLUE, GREEN = "#24577a", "#3e8a2f"  # app blue + Fondomonte green (from the Fondomonte logo)
 LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo-fondomonte-128.png")
 def num(v, lang, n=1):
@@ -132,8 +240,20 @@ def build(S, langs, test=False):
                 f'<div style="font-size:32px;line-height:40px;font-weight:bold;color:{fg}">{html.escape(val)}</div>'
                 f'<div style="font-size:15px;line-height:19px">{lab(k, 15)}</div>' + (f'<div style="font-size:13px;color:#5c6b77;margin-top:3px">{html.escape(sb)}</div>' if sb else "") + '</td></tr></table></td>')
     grid = "".join(f'<tr>{card(*cards[i])}{card(*cards[i+1])}</tr>' for i in (0, 2))
-    det = [(lab("hum"), f'{num(S["rhmean"], p, 0)} % / {num(S["rhmin"], p, 0)} %'), (lab("sun"), f'{num(S["sun"], p)} h')]
-    dt_html = "".join(f'<tr><td style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:15px">{a}</td><td align="right" style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:17px;font-weight:bold;color:{BLUE};white-space:nowrap">{b}</td></tr>' for a, b in det)
+    XP = extras(S, p); XQ = {x[0]: x for x in extras(S, q)} if q else {}
+    def xlab(k, arg, note, l2):
+        a = TX[p][k].format(arg) if arg else TX[p][k]; h_ = f'<span style="font-weight:bold;color:#1f2a30">{html.escape(a)}</span>'
+        if note: h_ += f' <span style="font-size:12px;color:#b5651d">{html.escape(note)}</span>'
+        if l2:
+            b = TX[q][k].format(l2[3]) if l2[3] else TX[q][k]
+            h_ += f'<br><span style="font-size:12px;color:#8a97a3">{html.escape(b)}' + (f' {html.escape(l2[2])}' if l2[2] else "") + '</span>'
+        return h_
+    det = []
+    for k, v, note, arg in XP:
+        l2 = XQ.get(k); val = html.escape(v)
+        if l2 and l2[1] != v: val += f'<br><span style="font-size:13px;font-weight:normal;color:#8a97a3">{html.escape(l2[1])}</span>'
+        det.append((xlab(k, arg, note, l2), val))
+    dt_html = "".join(f'<tr><td style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:15px">{a}</td><td align="right" style="padding:10px 4px;border-bottom:1px solid #e3e8ec;{F}font-size:16px;font-weight:bold;color:{BLUE};white-space:nowrap">{b}</td></tr>' for a, b in det)
     note_h = ""
     for n, txt in notes:
         bg, bd = ("#fff4e5", "#e8833a") if n == "heat" else ("#e8f1fb", "#4a86c5") if n == "chill" else ("#fff8d6", "#d9b100")
@@ -161,7 +281,7 @@ def build(S, langs, test=False):
         t = TX[l]; out = [dline(l), head(l), "",
               f'{t["temp"]}: {num(S["tmax"], l)} / {num(S["tmin"], l)} °C', f'{t["rain"]}: {num(S["rain"], l)} mm',
               f'{t["et0"]} ({t["grass"]}): {num(S["et0"], l)} mm', f'{t["wind"]}: {num(S["wmean"], l)} km/h {sub("wind", l)}',
-              f'{t["hum"]}: {num(S["rhmean"], l, 0)} % / {num(S["rhmin"], l, 0)} %', f'{t["sun"]}: {num(S["sun"], l)} h']
+              ] + [(t[k].format(arg) if arg else t[k]) + f': {v}' + (f' {note}' if note else "") for k, v, note, arg in extras(S, l)]
         return "\n".join(out + [x[l] for _, x in notes])
     txt = "San Vicente Weather · Fondomonte\n\n" + ("\n\n" + "-" * 40 + "\n\n").join(txt_sec(l) for l in langs) + f'\n\n{TX[p]["src"]} · {gen}\n' + " / ".join(L[l]["unsub"] for l in langs) + "\n"
     return subj, txt, hh, imgs
