@@ -4,8 +4,12 @@ Forecast: Open-Meteo Previous Runs API, hourly *_previous_day1 (the run issued ~
 models (ECMWF IFS, GFS, ICON, GEM, best match); daily values per model, then the MEDIAN across models (as the app blends).
 Observed: station hourly series (data/station-series.json 'h'): tmax=max(tx), tmin=min(tn), rain=sum(r), wind mean/max of
 hourly mean wind, RH mean, ET0=day max of cumulative e0. A day needs >= 22 station hours. Output: data/verification.json (last 90 days).
-Env HIST_FILES: extra series JSON files (colon-separated) for backfill."""
+Env HIST_FILES: extra series JSON files (colon-separated) for backfill.
+Also stores each model's own daily values (days[].fm, backfilled once for older days) and the accuracy-based model
+weights + bias correction derived from them (top-level "skill", see forecast_skill.py) that the app's forecast uses."""
 import json, os, sys, statistics as stt, urllib.request, datetime as dt
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import forecast_skill
 LAT, LON = -31.8506, -65.4294
 MODELS = ["ecmwf_ifs025", "gfs_seamless", "icon_seamless", "gem_seamless", "best_match"]
 VARS = ["temperature_2m", "precipitation", "wind_speed_10m", "relative_humidity_2m", "et0_fao_evapotranspiration"]
@@ -38,7 +42,7 @@ def fc_days(d0, d1):
         idx = [i for i, t in enumerate(T) if t.startswith(day)]
         # A-06: Open-Meteo hourly rain/ET0 refer to the PRECEDING hour, so the local day's total is hours 01:00..24:00 (next day 00:00)
         nxt = (dt.date.fromisoformat(day) + dt.timedelta(days=1)).isoformat() + "T00:00"
-        ids = [i for i, t in enumerate(T) if (t.startswith(day) and not t.endswith("T00:00")) or t == nxt]; per = {k: [] for k in ["tmax", "tmin", "rain", "wmean", "wmax", "rh", "et0"]}
+        ids = [i for i, t in enumerate(T) if (t.startswith(day) and not t.endswith("T00:00")) or t == nxt]; per = {k: [] for k in ["tmax", "tmin", "rain", "wmean", "wmax", "rh", "et0"]}; fm = {}
         for m in MODELS:
             col = lambda v: [h[f"{v}_previous_day1_{m}"][i] for i in idx if h.get(f"{v}_previous_day1_{m}") and h[f"{v}_previous_day1_{m}"][i] is not None]
             t, w, rh = col("temperature_2m"), col("wind_speed_10m"), col("relative_humidity_2m")
@@ -46,13 +50,14 @@ def fc_days(d0, d1):
             p, e = sm("precipitation"), sm("et0_fao_evapotranspiration")
             if len(t) < 22: continue
             per["tmax"].append(max(t)); per["tmin"].append(min(t)); per["rain"].append(sum(p))
+            fm[m] = {"tmax": round(max(t), 1), "tmin": round(min(t), 1), "rain": round(sum(p), 1) if len(p) >= 22 else None}
             if w: w = [x * W2M for x in w]; per["wmean"].append(stt.mean(w)); per["wmax"].append(max(w))
             if rh: per["rh"].append(stt.mean(rh))
             if e: per["et0"].append(sum(e))
         if not per["tmax"]: continue
         md = lambda k, n=1: round(stt.median(per[k]), n) if per[k] else None
         out[day] = {"tmax": md("tmax"), "tmin": md("tmin"), "rain": md("rain"), "wmean": md("wmean"), "wmax": md("wmax"),
-                    "rh": md("rh", 0), "et0": md("et0", 2), "models": len(per["tmax"]), "w2m": True}
+                    "rh": md("rh", 0), "et0": md("et0", 2), "models": len(per["tmax"]), "w2m": True, "fm": fm}
     return out
 def main():
     try: V = json.load(open(OUT))
@@ -65,6 +70,15 @@ def main():
                 if f.get(k) is not None: f[k] = round(f[k] * W2M, 1)
             f["w2m"] = True; mig += 1
     if mig: print("verify: converted forecast wind to 2 m for", mig, "stored days")
+    bf = sorted(x["d"] for x in V["days"] if "fm" not in x)  # one-off backfill of per-model values for older days
+    if bf:
+        try:
+            fcb = fc_days(bf[0], bf[-1])
+            for x in V["days"]:
+                if "fm" not in x and x["d"] in fcb: x["fm"] = fcb[x["d"]]["fm"]; mig += 1
+            print("verify: per-model values backfilled for", sum("fm" in x for x in V["days"] if x["d"] in bf), "days")
+        except Exception as e: print("verify: per-model backfill failed:", e)
+    if mig: V["skill"] = forecast_skill.compute(V["days"])
     have = {x["d"] for x in V["days"]}
     files = ["data/station-series.json"] + [f for f in os.environ.get("HIST_FILES", "").split(":") if f]
     H = hourly_station(files)
@@ -76,8 +90,13 @@ def main():
         print("verify: nothing new"); return False
     fc = fc_days(min(obs), max(obs)); new = 0
     for d, o in obs.items():
-        if d in fc: V["days"].append({"d": d, "f": fc[d], "o": o}); new += 1
+        if d in fc: fd = dict(fc[d]); fmd = fd.pop("fm", None); V["days"].append({"d": d, "f": fd, "o": o, **({"fm": fmd} if fmd else {})}); new += 1
     V["days"] = sorted(V["days"], key=lambda x: x["d"])[-KEEP:]
+    for x in V["days"]:  # new blend (weighted + bias-corrected) next to the old median: 'live' for days verified now, 'backtest' (out-of-sample) once for older days
+        if "fb" not in x and x.get("fm"):
+            fb = forecast_skill.day_blend(V["days"], x, "live" if x["d"] == yday else "backtest")
+            if fb and (fb["src"] == "live" or fb["n"] >= forecast_skill.MIN_DAYS): x["fb"] = fb
+    V["skill"] = forecast_skill.compute(V["days"]); V["skill"]["updated"] = dt.datetime.now(TZ).isoformat(timespec="minutes")
     V.update(updated=dt.datetime.now(TZ).isoformat(timespec="minutes"),
              method="Forecast wind converted 10 m -> 2 m (x0.748). 1-day-ahead: Open-Meteo Previous Runs (previous_day1), median of ECMWF IFS, GFS, ICON, GEM, best match vs Fondomonte station")
     json.dump(V, open(OUT, "w"), ensure_ascii=False, separators=(",", ":")); print("verify: added", new, "days:", ", ".join(sorted(obs))); return new > 0

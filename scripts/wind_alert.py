@@ -48,8 +48,8 @@ try:
   uids = [d["name"].rsplit("/", 1)[1] for d in noms if d.get("fields", {}).get("wind", {}).get("booleanValue")]
   if only: uids = [u for u in uids if u == only] or ([only] if force else [])
   g = f"{gust:.0f}" if isinstance(gust, (int, float)) else "—"
-  MSG = {"en": ("💨 Windy for spraying", f"Station: {wind:.0f} km/h now (gust {g}) · San Vicente"),
-         "es": ("💨 Viento para pulverizar", f"Estación: {wind:.0f} km/h ahora (ráfaga {g}) · San Vicente")}
+  MSG = {"en": ("💨 Wind alert", f"Station: {wind:.0f} km/h now (gust {g}) · San Vicente"),
+         "es": ("💨 Alerta de viento", f"Estación: {wind:.0f} km/h ahora (ráfaga {g}) · San Vicente")}
   sent = 0
   for uid in uids:
       try: doc = req(f"{FS}/pushSubs/{uid}", tok=tok)
