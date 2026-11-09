@@ -29,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install
-        run: pip install -q pywebpush matplotlib
+        run: pip install -q -U pywebpush matplotlib pyopenssl
       - name: Wait until 08:00 local (11:00 UTC)
         if: github.event_name == 'schedule'
         run: |

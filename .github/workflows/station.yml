@@ -24,9 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install
-        run: pip install -q pywebpush
+        run: pip install -q -U pywebpush pyopenssl
       - name: Poll station, alert, save to Firestore
         env:
           HOBOLINK_API_TOKEN: ${{ secrets.HOBOLINK_API_TOKEN }}
