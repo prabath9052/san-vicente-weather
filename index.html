@@ -275,6 +275,52 @@ html[data-theme=dark] .tabs button[data-t=fc]{background:#3a2f1a;color:#ffd58a}h
  .tg-bg.on .tg-m{transform:none}.tg-grab{display:block;position:absolute;left:50%;top:-2px;width:40px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}.tg-h{padding-top:10px}
  .tg-sts{grid-template-columns:1fr}#nowg .tg-ic{right:7px;bottom:6px}}
 .tg-w{position:relative}.tg-tt{color:#1d2a35;line-height:1.45}.tg-tt b:first-child{display:block;margin-bottom:1px}
+</style><style id="hl">.hl-b{display:flex;gap:10px;align-items:flex-start;background:#fff4d6;color:#5a3d00;border:1px solid #f0cf7a;border-radius:12px;padding:10px 12px;margin:4px 0 10px;font-size:.88rem;line-height:1.4}
+.hl-b[hidden]{display:none}.hl-t{flex:1}.hl-t>div+div{margin-top:4px}.hl-t small{opacity:.8}
+.hl-x{border:0;background:#0000000f;color:inherit;border-radius:50%;width:28px;height:28px;flex:none;cursor:pointer}
+html[data-theme=dark] .hl-b{background:#3b2f10;color:#ffe2a0;border-color:#6b5420}html[data-theme=dark] .hl-x{background:#ffffff1a}
+.off-b{display:flex;gap:8px;align-items:center;background:#e8eef3;color:#1d2a35;border:1px solid #c9d6df;border-radius:12px;padding:9px 12px;margin:4px 0 10px;font-size:.88rem;line-height:1.4}
+.off-b[hidden]{display:none}html[data-theme=dark] .off-b{background:#22313c;color:var(--fg);border-color:#34444f}
+
+body.sv-off #status{display:none}
+</style><style id="dkc">/* ===== Dark mode for all charts (station graphs, tile popups, hourly rain chart, Forecast vs station, rain map legend).
+   CSS overrides the SVG presentation attributes, so switching the theme recolours charts live without re-rendering. ===== */
+html[data-theme=dark]{--ch-bg:#121d26;--ch-grid:#24333f;--ch-grid2:#1d2a34;--ch-mid:#4a5b69;--ch-frame:#34444f;--ch-txt:#a9bac7;--ch-txt2:#c9d6df}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg rect[fill="#fff"]{fill:var(--ch-bg)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg line[stroke="#e6e9ec"]{stroke:var(--ch-grid)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg line[stroke="#eceff2"]{stroke:var(--ch-grid2)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg line[stroke="#b9c0c7"]{stroke:var(--ch-mid)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg line[stroke="#999"]{stroke:var(--ch-mid)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg rect[stroke="#ccd2d8"]{stroke:var(--ch-frame)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg text[fill="#555"],html[data-theme=dark] :is(.sg-w,.tg-w) svg text[fill="#444"]{fill:var(--ch-txt)}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg text[fill="#8a929a"]{fill:#71828f}
+html[data-theme=dark] :is(.sg-w,.tg-w) svg line[stroke="#333"]{stroke:#e3ebf1}
+/* dark series colours brightened for contrast (same hue); Fondomonte blues/greens otherwise unchanged */
+html[data-theme=dark] svg [stroke="#1d6b1d"]{stroke:#5cc35c}html[data-theme=dark] svg [fill="#1d6b1d"]{fill:#5cc35c}
+html[data-theme=dark] svg [stroke="#8a5a2b"]{stroke:#d09a62}html[data-theme=dark] svg [fill="#8a5a2b"]{fill:#d09a62}
+html[data-theme=dark] svg [stroke="#1f6fd0"]{stroke:#5fa4f2}html[data-theme=dark] svg [fill="#1f6fd0"]{fill:#5fa4f2}
+html[data-theme=dark] svg [fill="#fff3a0"]{fill:#e8d36a}
+html[data-theme=dark] :is(.sg-lg2,.tg-lg,.sg-tt,.tg-tt) i[style*="#1d6b1d"]{background:#5cc35c!important}
+html[data-theme=dark] :is(.sg-lg2,.tg-lg,.sg-tt,.tg-tt) i[style*="#8a5a2b"]{background:#d09a62!important}
+html[data-theme=dark] :is(.sg-lg2,.tg-lg,.sg-tt,.tg-tt) i[style*="#1f6fd0"]{background:#5fa4f2!important}
+html[data-theme=dark] :is(.sg-lg2,.tg-lg,.sg-tt,.tg-tt) i[style*="#fff3a0"]{background:#e8d36a!important}
+html[data-theme=dark] .sg-w{background:var(--ch-bg)!important}
+html[data-theme=dark] .sg-lg2{color:var(--ch-txt2)}
+html[data-theme=dark] :is(.sg-tt,.tg-tt){background:#1b2833f2!important;border-color:#3a4a56!important;color:var(--fg)!important;box-shadow:0 2px 10px #0008}
+html[data-theme=dark] .sg-inline,html[data-theme=dark] .sgsec .hm{background:var(--card)}
+html[data-theme=dark] .sgsec :is(.muted,p){color:var(--mut)}
+/* hourly rain chart in the hourly popup */
+html[data-theme=dark] .hm-chart line[stroke="#e3e8ec"]{stroke:var(--ch-grid)}html[data-theme=dark] .hm-chart line[stroke="#aab"]{stroke:var(--ch-mid)}
+html[data-theme=dark] .hm-chart text[fill="#567"],html[data-theme=dark] .hm-chart text[fill="#667"]{fill:var(--ch-txt)}
+html[data-theme=dark] .hm-chart text[fill="#24577a"]{fill:#8cc4ea}
+/* Forecast vs station panel */
+html[data-theme=dark] .vf-ch [stroke="#8a2d0f"]{stroke:#ff9a6e}html[data-theme=dark] .vf-ch [fill="#8a2d0f"]{fill:#ff9a6e}
+html[data-theme=dark] .vf-ch [stroke="#174a6e"]{stroke:#8cc4ea}html[data-theme=dark] .vf-ch [fill="#174a6e"]{fill:#8cc4ea}
+html[data-theme=dark] .vf-lg i[style*="#8a2d0f"]{background:#ff9a6e!important}
+html[data-theme=dark] .vf-b.ok{background:#2a8a4a40;color:#8fe0a8}html[data-theme=dark] .vf-b.mid{background:#e0a10040;color:#ffd27a}html[data-theme=dark] .vf-b.bad{background:#e0322b40;color:#ff9b96}
+/* rain map legend */
+html[data-theme=dark] .pm-legend{background:#18252fee;color:var(--fg);box-shadow:0 1px 4px #0008}
+html[data-theme=dark] #sgBody,html[data-theme=dark] .sgsec .hm-b{background:var(--card)!important;color:var(--fg)}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Forecast skill (preview): accuracy-weighted model blend + station bias correction =====
 // Weights and corrections are computed daily by scripts/verify.py (forecast_skill.py) from the 1-day-ahead
 // forecast-vs-station history and stored in Firestore private/verification ("skill"). Cached in localStorage.
@@ -332,6 +378,41 @@ html[data-theme=dark] .tabs button[data-t=fc]{background:#3a2f1a;color:#ffd58a}h
   else svPrivStatus[name]='signed-out';
   if(!PUBLIC_FALLBACK)return{ok:false,status:u?503:401,json:async()=>{throw new Error('unavailable')}};
   const r=await fetch(url,opt);if(r.ok)svPrivStatus[name]+=' → public';return r};
+})();
+
+// ===== Offline view: keep the last station data and forecast on this device for the signed-in user =====
+// Saved in localStorage per user (svOff:<doc>), only after sign-in; cleared on sign-out or after 7 days.
+// When the network is unavailable the app shows the saved copy with an 'Offline – last updated' notice
+// and refreshes automatically when the connection comes back. Nothing is sent anywhere.
+(function(){const P='svOff:',MAXAGE=7*864e5,ES=()=>window.SV_LANG==='es';window.SV_OFFLINE=false;let shown={};
+ const uid=()=>(window.svAuth&&svAuth.currentUser&&svAuth.currentUser.uid)||window.__SVTESTUID||null;
+ const put=(k,data,n=0)=>{const u=uid();if(!u){if(n<40)setTimeout(()=>put(k,data,n+1),500);return}try{localStorage.setItem(P+k,JSON.stringify({u,t:Date.now(),d:data}))}catch(e){/* quota: skip */}};
+ const get=k=>{const u=uid();if(!u)return null;try{const x=JSON.parse(localStorage.getItem(P+k)||'null');if(!x||x.u!==u||Date.now()-x.t>MAXAGE)return null;return x}catch(e){return null}};
+ const clear=()=>{try{Object.keys(localStorage).filter(k=>k.startsWith(P)).forEach(k=>localStorage.removeItem(k))}catch(e){}};
+ window.svOfflineClear=clear;
+ // private docs: wrap svFetchPriv (priv.js) – save every good answer, serve the saved one when the network fails
+ const orig=window.svFetchPriv;if(orig)window.svFetchPriv=async function(name,url,opt){let r=null;
+  if(navigator.onLine!==false){try{r=await orig(name,url,opt)}catch(e){r=null}}
+  if(r&&r.ok){try{const d=await r.json();put(name,d);return{ok:true,status:200,json:async()=>d}}catch(e){return r}}
+  const c=get(name);if(c){mark(name,c.t);return{ok:true,status:200,offline:true,json:async()=>c.d}}return r||{ok:false,status:503,json:async()=>{throw new Error('offline')}}};
+ // forecast: called by loadAll with the five source responses; returns what process() should use
+ window.svOffFc=function(arr){const ok=arr&&arr[0]&&arr[1];if(ok){put('forecast',arr);return arr}
+  const c=get('forecast');if(c&&(navigator.onLine===false||!arr||!arr[0])){mark('forecast',c.t);return c.d}return arr};
+ function tm(t){return new Date(t).toLocaleString(ES()?'es-AR':'en-GB',{timeZone:'America/Argentina/Buenos_Aires',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})}
+ function mark(k,t){window.SV_OFFLINE=true;shown[k]=t;document.body.classList.add('sv-off');note()}
+ window.svOffUpd=function(){const u=document.getElementById('upd');if(u&&window.SV_OFFLINE&&shown.forecast)u.textContent=tm(shown.forecast)+' ART'};
+ function note(){const m=document.querySelector('main');if(!m)return;let b=document.getElementById('offBanner');
+  if(!b){b=document.createElement('div');b.id='offBanner';b.className='off-b';b.setAttribute('role','status');m.insertBefore(b,m.firstChild)}
+  if(!window.SV_OFFLINE){b.hidden=true;document.body.classList.remove('sv-off');return}const ts=Object.values(shown);const t=ts.length?Math.max(...ts):null,st=window.SVST&&window.SVST.observed;
+  b.innerHTML=ES()?`📴 <span><b>Sin conexión</b> – última actualización ${t?tm(t):'—'} ART${st?` · lectura de la estación ${tm(st)}`:''}. Se actualiza sola al volver la conexión.</span>`
+   :`📴 <span><b>Offline</b> – last updated ${t?tm(t):'—'} ART${st?` · station reading ${tm(st)}`:''}. Refreshes automatically when you are back online.</span>`;b.hidden=false;window.svHealthRender&&svHealthRender()}
+ window.addEventListener('svstation',()=>{if(window.SV_OFFLINE)note()});
+ document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(note,200)});
+ const retry=()=>{if(!window.SV_OFFLINE)return;window.SV_OFFLINE=false;shown={};note();setTimeout(()=>{const r=document.getElementById('refresh');if(r)r.click();else location.reload()},800)};
+ setInterval(()=>{if(window.SV_OFFLINE&&navigator.onLine!==false&&!document.hidden)retry()},3*60e3);
+ window.addEventListener('online',retry);
+ // sign-out (or a different user) clears the saved copy
+ const w=setInterval(()=>{if(!window.svAuth||!window.svAuthMod)return;clearInterval(w);svAuthMod.onAuthStateChanged(svAuth,u=>{if(!u)clear();else try{Object.keys(localStorage).filter(k=>k.startsWith(P)).forEach(k=>{const x=JSON.parse(localStorage.getItem(k)||'null');if(!x||x.u!==u.uid)localStorage.removeItem(k)})}catch(e){}})},200);
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -459,7 +540,7 @@ function svSetLang(l){SV_LANG=l==='es'?'es':'en';localStorage.setItem('svLang',S
  busy=true;trNode(document.body);busy=false;
  try{if(window.SV_LAST)process(...SV_LAST)}catch(e){console.error(e)}
  try{window.pmRelabel&&pmRelabel()}catch(e){}try{window.svHourlyRefresh&&svHourlyRefresh()}catch(e){}
- if(window.SV_UPD)document.getElementById('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART'}
+ if(window.SV_UPD)document.getElementById('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';window.svOffUpd&&svOffUpd()}
 window.svSetLang=svSetLang;
 document.addEventListener('DOMContentLoaded',()=>{obs.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:AT});document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>svSetLang(b.dataset.l));svSetLang(SV_LANG)});
 </script>
@@ -507,9 +588,9 @@ async function loadAll(){$('refresh').classList.add('busy');$('refresh').disable
   getJSON(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${LAT}&lon=${LON}`).then(d=>{S('MET Norway',true,'OK');return d},e=>{S('MET Norway',false,'unavailable ('+e.message+')');return null}),
   getJSON(`https://wttr.in/${LAT},${LON}?format=j1`).then(d=>{S('wttr.in',true,'OK (3 days)');return d},e=>{S('wttr.in',false,'unavailable ('+e.message+')');return null})
  ];
- const [om,hr,en,mn,wt]=await Promise.all(p);
+ let [om,hr,en,mn,wt]=await Promise.all(p);if(window.svOffFc)[om,hr,en,mn,wt]=svOffFc([om,hr,en,mn,wt]);
  window.SV_LAST=[om,hr,en,mn,wt];try{process(om,hr,en,mn,wt)}catch(e){console.error(e);$('summary').textContent='Processing error: '+e.message}
- window.SV_UPD=new Date();$('refresh').classList.remove('busy');$('refresh').disabled=false;$('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';
+ window.SV_UPD=new Date();$('refresh').classList.remove('busy');$('refresh').disabled=false;$('upd').textContent=SV_UPD.toLocaleString(svLoc(),{timeZone:TZ,dateStyle:'medium',timeStyle:'short'})+' ART';window.svOffUpd&&svOffUpd();
 }
 function renderStatus(st){$('status').innerHTML=Object.entries(st).map(([k,[ok,m]])=>`<span class="pill ${ok===null?'wait':ok?'ok':'bad'}">${ok===null?'⏳':ok?'✔':'✖'} ${k}: ${m}</span>`).join('')}
 
@@ -992,12 +1073,12 @@ const bAdm=mk('admBtn','<span>👥</span> <span class="tx">Alert recipients (adm
 const modal=document.createElement('div');modal.className='al-bg';modal.id='alBg';modal.innerHTML='<div class="al-box" role="dialog" aria-modal="true"><button class="al-x" id="alX" aria-label="Close">✕</button><div id="alBody"></div></div>';document.body.appendChild(modal);
 const close=()=>modal.classList.remove('on');$('alX').onclick=close;modal.onclick=e=>{if(e.target===modal)close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 const F=()=>window.svFs,D=()=>window.svDb;
-async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return (s.exists()&&(s.data().wind===true||s.data().humidity===true||s.data().eto===true))||(U===ADMIN&&!(s.exists()&&s.data().eto===false&&s.data().humidity===false))}catch(e){return null}}
+async function nominated(){try{const s=await F().getDoc(F().doc(D(),'alertNominees',UID));return (s.exists()&&(s.data().wind===true||s.data().humidity===true||s.data().eto===true||s.data().health===true))||(U===ADMIN&&!(s.exists()&&s.data().eto===false&&s.data().humidity===false))}catch(e){return null}}
 async function curSub(){if(!SUP)return null;const r=REG||await navigator.serviceWorker.ready;return r.pushManager.getSubscription()}
 async function renderAl(msg){window.svBell&&setTimeout(()=>svBell.pushState(),0);const B=$('alBody');const nom=await nominated();const sub=await curSub().catch(()=>null);const on=!!sub&&Notification.permission==='granted';
  let st=!SUP?(IOS&&!STANDALONE?t('On iPhone/iPad, first add this app to your Home Screen (Share ▸ Add to Home Screen, iOS 16.4+), then open it from there.','En iPhone/iPad, primero agregá la app a la pantalla de inicio (Compartir ▸ Agregar a inicio, iOS 16.4+) y abrila desde ahí.'):t('This browser does not support push notifications.','Este navegador no admite notificaciones push.'))
   :Notification.permission==='denied'?t('Notifications are blocked for this site in your browser settings.','Las notificaciones están bloqueadas para este sitio en la configuración del navegador.'):'';
- B.innerHTML=`<h3>🔔 ${t('Wind alerts','Alertas de viento')}</h3><p class="al-p">${t('Get a phone notification when the station’s current average wind goes above 15 km/h, and/or when station humidity goes above 50% at night (18:00–06:00) — whichever the admin assigned you.','Recibí una notificación cuando el viento medio actual de la estación supere 15 km/h y/o cuando la humedad de la estación supere 50% de noche (18:00–06:00), según lo que te asigne el administrador.')}</p>
+ B.innerHTML=`<h3>🔔 ${t('Wind alerts','Alertas de viento')}</h3><p class="al-p">${t('Get a phone notification when the station’s current average wind goes above 15 km/h, and/or when station humidity goes above 50% at night (18:00–06:00) — whichever the admin assigned you. Admins can also get a station health warning when the station stops sending data or a sensor reads something impossible.','Recibí una notificación cuando el viento medio actual de la estación supere 15 km/h y/o cuando la humedad de la estación supere 50% de noche (18:00–06:00), según lo que te asigne el administrador. El administrador también puede recibir un aviso de estado de la estación cuando deja de enviar datos o un sensor marca algo imposible.')}</p>
  <label class="al-sw"><input type="checkbox" id="alTog" ${on?'checked':''} ${SUP&&Notification.permission!=='denied'?'':'disabled'}><span>${t('Alerts on this device','Alertas en este dispositivo')}</span></label>
  <p class="al-n ${nom?'ok':''}">${nom===true?t('✓ You are on the alert list.','✓ Estás en la lista de alertas.'):nom===false?t('You are not nominated yet — the admin must add you before alerts arrive.','Todavía no estás nominado: el administrador debe agregarte para recibir alertas.'):t('Could not check the alert list.','No se pudo verificar la lista de alertas.')}</p>
  ${st?`<p class="al-w">${st}</p>`:''}<p class="al-i">📱 ${t('iPhone: push only works after adding the app to the Home Screen (iOS 16.4 or later).','iPhone: las notificaciones solo funcionan si agregás la app a la pantalla de inicio (iOS 16.4 o posterior).')}</p>${msg?`<p class="al-m">${msg}</p>`:''}${window.SV_ISADMIN?`<button type="button" class="al-adm" id="alAdm">👥 ${t('Alert recipients (admin) — tick 💨 wind / 💧 humidity per user','Destinatarios (admin): marcar 💨 viento / 💧 humedad por usuario')}</button>`:''}`;
@@ -1021,9 +1102,9 @@ async function renderAdm(msg){const B=$('alBody');B.innerHTML=`<h3>👥 ${t('Ale
   if(!nm){M.textContent=t('Enter a name.','Ingresá un nombre.');return}if(!EMRE.test(em)){M.textContent=t('Invalid email address.','Dirección de email inválida.');return}
   try{await save('email_'+await sha1(em),{name:nm,email:em,summary:true,createdBy:'admin'});renderAdm(t('Added ','Agregado ')+esc(em))}catch(e){M.textContent=e.message}};
  try{const [us,ns,ps]=await Promise.all([F().getDocs(F().collection(D(),'usernames')),F().getDocs(F().collection(D(),'alertNominees')).catch(e=>{window.SVADMERR=e.message;return null}),F().getDocs(F().collection(D(),'pushSubs')).catch(()=>null)]);
-  const N={},H={},E={},P={},SM={},EM={},EO=[];ns&&ns.forEach(d=>{const x=d.data();if(d.id.startsWith('email_')){EO.push({id:d.id,...x});return}N[d.id]=x.wind===true;H[d.id]=x.humidity;E[d.id]=x.eto;SM[d.id]=x.summary===true;EM[d.id]=x.email||''});ps&&ps.forEach(d=>P[d.id]=Object.keys(d.data().subs||{}).length);
+  const N={},H={},E={},HS={},P={},SM={},EM={},EO=[];ns&&ns.forEach(d=>{const x=d.data();if(d.id.startsWith('email_')){EO.push({id:d.id,...x});return}N[d.id]=x.wind===true;H[d.id]=x.humidity;E[d.id]=x.eto;HS[d.id]=x.health;SM[d.id]=x.summary===true;EM[d.id]=x.email||''});ps&&ps.forEach(d=>P[d.id]=Object.keys(d.data().subs||{}).length);
   const rows=[];us.forEach(d=>{const x=d.data();if(x.authUid)rows.push({id:d.id,uid:x.authUid})});rows.sort((a,b)=>a.id.localeCompare(b.id));
-  $('admL').innerHTML=rows.map(r=>`<div class="adm-r"><span class="adm-u">${r.id}</span><label class="adm-c" title="${t('Wind alerts','Alertas de viento')}"><i>💨</i><input type="checkbox" data-f="wind" data-uid="${r.uid}" data-id="${r.id}" ${N[r.uid]?'checked':''}></label><label class="adm-c" title="${t('Humidity alerts','Alertas de humedad')}"><i>💧</i><input type="checkbox" data-f="humidity" data-uid="${r.uid}" data-id="${r.id}" ${(H[r.uid]===true||(H[r.uid]===undefined&&r.id===ADMIN))?'checked':''}></label><label class="adm-c" title="${t('Daily ET0 (08:00)','ET0 diaria (08:00)')}"><i>🌱</i><input type="checkbox" data-f="eto" data-uid="${r.uid}" data-id="${r.id}" ${(E[r.uid]===true||(E[r.uid]===undefined&&r.id===ADMIN))?'checked':''}></label><label class="adm-c" title="${t('Daily summary email (08:00)','Resumen diario por email (08:00)')}"><i>📧</i><input type="checkbox" data-f="summary" data-uid="${r.uid}" data-id="${r.id}" ${SM[r.uid]?'checked':''}></label><span class="adm-d">${P[r.uid]?'📱 '+P[r.uid]:t('no device','sin dispositivo')}</span><input class="adm-em" type="email" placeholder="📧 ${t('email for daily summary','email para el resumen diario')}" maxlength="120" data-uid="${r.uid}" data-id="${r.id}" value="${esc(EM[r.uid])}"></div>`).join('')||'—';if(!ns)$('admL').insertAdjacentHTML('beforeend',`<p class="al-w">${t('Nominations unavailable: ','Nominaciones no disponibles: ')}${window.SVADMERR||''}</p>`);
+  $('admL').innerHTML=rows.map(r=>`<div class="adm-r"><span class="adm-u">${r.id}</span><label class="adm-c" title="${t('Wind alerts','Alertas de viento')}"><i>💨</i><input type="checkbox" data-f="wind" data-uid="${r.uid}" data-id="${r.id}" ${N[r.uid]?'checked':''}></label><label class="adm-c" title="${t('Humidity alerts','Alertas de humedad')}"><i>💧</i><input type="checkbox" data-f="humidity" data-uid="${r.uid}" data-id="${r.id}" ${(H[r.uid]===true||(H[r.uid]===undefined&&r.id===ADMIN))?'checked':''}></label><label class="adm-c" title="${t('Daily ET0 (08:00)','ET0 diaria (08:00)')}"><i>🌱</i><input type="checkbox" data-f="eto" data-uid="${r.uid}" data-id="${r.id}" ${(E[r.uid]===true||(E[r.uid]===undefined&&r.id===ADMIN))?'checked':''}></label><label class="adm-c" title="${t('Station health warnings','Avisos de estado de la estación')}"><i>📡</i><input type="checkbox" data-f="health" data-uid="${r.uid}" data-id="${r.id}" ${(HS[r.uid]===true||(HS[r.uid]===undefined&&r.id===ADMIN))?'checked':''}></label><label class="adm-c" title="${t('Daily summary email (08:00)','Resumen diario por email (08:00)')}"><i>📧</i><input type="checkbox" data-f="summary" data-uid="${r.uid}" data-id="${r.id}" ${SM[r.uid]?'checked':''}></label><span class="adm-d">${P[r.uid]?'📱 '+P[r.uid]:t('no device','sin dispositivo')}</span><input class="adm-em" type="email" placeholder="📧 ${t('email for daily summary','email para el resumen diario')}" maxlength="120" data-uid="${r.uid}" data-id="${r.id}" value="${esc(EM[r.uid])}"></div>`).join('')||'—';if(!ns)$('admL').insertAdjacentHTML('beforeend',`<p class="al-w">${t('Nominations unavailable: ','Nominaciones no disponibles: ')}${window.SVADMERR||''}</p>`);
   $('admL').querySelectorAll('input[type=checkbox]').forEach(c=>c.onchange=async()=>{c.disabled=true;try{if(c.dataset.f==='summary'&&c.checked&&!EMRE.test(c.closest('.adm-r').querySelector('.adm-em').value.trim()))throw new Error(t('Enter a valid email first.','Primero ingresá un email válido.'));await save(c.dataset.uid,{user:c.dataset.id,[c.dataset.f]:c.checked})}catch(e){c.checked=!c.checked;alert(e.message)}c.disabled=false});
   $('admL').querySelectorAll('.adm-em').forEach(i=>i.onchange=async()=>{const v=i.value.trim().toLowerCase();if(v&&!EMRE.test(v)){i.classList.add('bad');alert(t('Invalid email address.','Dirección de email inválida.'));return}i.classList.remove('bad');i.disabled=true;try{await save(i.dataset.uid,{user:i.dataset.id,email:v});i.value=v}catch(e){alert(e.message)}i.disabled=false});
   EO.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
@@ -1056,7 +1137,7 @@ async function loadLog(){try{const r=await svFetchPriv('alertsLog',LOGURL+'?t='+
  const newest=a.length?ts(a[0].time):0,grew=LASTN!==null&&newest>LASTN;LOG=a;LASTN=newest;badge(grew);if(!bp.hidden)renderBell()}catch(e){}}
 async function pushState(){try{const s=await curSub();PUSHON=!!s&&Notification.permission==='granted'}catch(e){PUSHON=false}if(!SUP)PUSHON=false;badge()}
 function renderBell(){const sn=seen();
- const items=LOG.slice(0,30).map(a=>{const w=a.type==='wind',eo=a.type==='eto',nw=ts(a.time)>sn;return `<li class="${nw?'nw':''}"><span class="bl-i">${w?'💨':eo?'🌱':'💧'}</span><span class="bl-t"><b>${w?t('Wind alert','Alerta de viento'):eo?t('Reference ET0 yesterday','ET0 de referencia de ayer'):t('Humidity alert','Alerta de humedad')}</b><span>${ES()?(a.textEs||a.text):a.text}</span><small>${ago(Date.now()-ts(a.time))} · ${loc(a.time)}</small></span></li>`}).join('');
+ const items=LOG.slice(0,30).map(a=>{const w=a.type==='wind',eo=a.type==='eto',hl=a.type==='health',nw=ts(a.time)>sn;return `<li class="${nw?'nw':''}"><span class="bl-i">${w?'💨':eo?'🌱':hl?'📡':'💧'}</span><span class="bl-t"><b>${w?t('Wind alert','Alerta de viento'):eo?t('Reference ET0 yesterday','ET0 de referencia de ayer'):hl?t('Station health','Estado de la estación'):t('Humidity alert','Alerta de humedad')}</b><span>${ES()?(a.textEs||a.text):a.text}</span><small>${ago(Date.now()-ts(a.time))} · ${loc(a.time)}</small></span></li>`}).join('');
  bp.innerHTML=`<div class="bp-h">🔔 ${t('Recent alerts','Alertas recientes')}</div>${PUSHON===false?`<button type="button" class="bp-off" id="bpEn">🔕 ${t('Notifications are off on this device — tap to turn them on','Las notificaciones están desactivadas en este dispositivo: tocá para activarlas')}</button>`:''}<ul class="bl">${items||`<li class="bl-e">${t('No alerts yet.','Todavía no hay alertas.')}</li>`}</ul>
  <div class="bp-f"><button type="button" class="kitem" id="bpSet">🔔 ${t('Wind & humidity alerts','Alertas de viento y humedad')}</button>${window.SV_ISADMIN?`<button type="button" class="kitem" id="bpAdm">👥 ${t('Alert recipients (admin)','Destinatarios de alertas (admin)')}</button>`:''}</div>`;
  const go=f=>()=>{bp.hidden=true;bb.setAttribute('aria-expanded','false');modal.classList.add('on');f()};
@@ -1312,6 +1393,25 @@ function init(){ui();const g=$('nowg');if(!g)return;new MutationObserver(mark).o
 window.addEventListener('svstation',mark);
 if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
 window.svTileGraph=open;})();
+</script>
+<script>// ===== Station health banner: station offline (no new reading > 2 h) or a sensor reading something impossible =====
+// Sources: the latest station reading (client-side age check, works even if the scheduled check stops) and
+// Firestore private/healthState written by scripts/station_health.py (sensor problems). Hidden while the phone itself is offline.
+(function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',OFF_MIN=120;let HS=null,hid='';
+ const tm=s=>{try{return new Date(s).toLocaleString(ES()?'es-AR':'en-GB',{timeZone:'America/Argentina/Buenos_Aires',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})}catch(e){return s}};
+ function box(){let b=$('hlBanner');if(!b){b=document.createElement('div');b.id='hlBanner';b.className='hl-b';b.setAttribute('role','alert');b.hidden=true;const m=document.querySelector('main');m.insertBefore(b,m.firstChild)}return b}
+ function render(){const b=box(),es=ES(),L=[];const st=window.SVST;if(window.SV_OFFLINE){b.hidden=true;return}
+  const ob=st&&st.observed?Date.parse(st.observed):null,age=ob?(Date.now()-ob)/6e4:null;
+  if(st&&(age==null||age>OFF_MIN)){const h=age==null?'—':age<90?Math.round(age)+' min':Math.round(age/60)+' h';
+   L.push(['off',es?`📡 <b>Estación sin datos</b>: no llegan lecturas nuevas desde ${tm(st.observed)} ART (hace ${h}). Se muestran las últimas recibidas.`:`📡 <b>Station offline</b>: no new readings since ${tm(st.observed)} ART (${h} ago). Showing the last readings received.`])}
+  const A=(HS&&HS.active)||{};for(const k in A){if(k==='offline')continue;const x=A[k];L.push([k,`⚠️ <b>${es?'Revisión de sensor':'Sensor check'}</b>: ${es?x.es:x.en}${x.since?` <small>(${es?'desde':'since'} ${tm(x.since)} ART)</small>`:''}`])}
+  const key=L.map(x=>x[0]).join(',');if(!L.length||key===hid){b.hidden=true;return}
+  b.innerHTML=`<div class="hl-t">${L.map(x=>`<div>${x[1]}</div>`).join('')}</div><button type="button" class="hl-x" aria-label="${es?'Ocultar':'Hide'}">✕</button>`;
+  b.querySelector('.hl-x').onclick=()=>{hid=key;b.hidden=true};b.hidden=false}
+ async function load(){try{if(!window.svFetchPriv)return;const r=await svFetchPriv('healthState','about:blank');if(r.ok)HS=await r.json()}catch(e){}render()}
+ window.svHealthRender=render;window.addEventListener('svstation',render);window.addEventListener('load',()=>setTimeout(load,1200));setInterval(load,5*60e3);setInterval(render,60e3);
+ document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(render,200)});
+})();
 </script>
 <script type="module">
 // ---- Firebase Auth gate: User ID (+ real email for recovery) & password; usernames/{id} in Firestore maps ID -> email ----

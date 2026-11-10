@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mirror private station data to Firestore 'private/{doc}' (readable by signed-in users only, written by the bot).
 Docs: station (data/station.json), stationSeries (data/station-series.json), alertsLog (data/alerts-log.json),
-windState / humidityState (alert state files). Each doc: {json: <string>, updated: <timestamp>}.
+windState / humidityState (alert state files), healthState (station health, shown as the app banner). Each doc: {json: <string>, updated: <timestamp>}.
 Only changed docs are written (hash cache in $RUNNER_TEMP or /tmp). Never fails the workflow.
 alertsLog is merged with the stored copy and written with an updateTime precondition (A-11), so the
 station and ET0 jobs (separate concurrency groups) can't overwrite each other's new alert entries."""
@@ -10,7 +10,8 @@ KEY = "AIzaSyD2kxZAxQw2Ux46PVBSI6HsuD0-Pc1ko0I"
 FS = "https://firestore.googleapis.com/v1/projects/san-vicente-weather/databases/(default)/documents"
 DOCS = {"station": "data/station.json", "stationSeries": "data/station-series.json", "alertsLog": "data/alerts-log.json",
         "windState": "data/wind-alert-state.json", "humidityState": "data/humidity-alert-state.json",
-        "verification": "data/verification.json", "etoState": "data/eto-state.json"}
+        "verification": "data/verification.json", "etoState": "data/eto-state.json",
+        "healthState": "data/health-state.json"}
 TMP = os.environ.get("RUNNER_TEMP", "/tmp"); HC = os.path.join(TMP, "fs_sync_hashes.json")
 def req(url, data=None, tok=None, method=None):
     h = {"Content-Type": "application/json"}

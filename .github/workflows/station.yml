@@ -52,6 +52,10 @@ jobs:
                 last=$now
               fi
             else echo "fetch failed (will retry)"; fi
+            # station health (offline / impossible readings): every pass, also when nothing new arrived; test runs never send
+            if [ -n "$FORCE_THRESHOLD" ]; then DRY_RUN=1 STATE_FILE=/tmp/health-test.json python3 -u scripts/station_health.py || true
+            else h0=$(cat data/health-state.json 2>/dev/null | sha1sum); python3 -u scripts/station_health.py || echo "health check failed (continuing)"
+              if [ "$h0" != "$(cat data/health-state.json 2>/dev/null | sha1sum)" ]; then ONLY_DOCS=healthState,alertsLog python3 -u scripts/fs_sync.py || true; fi; fi
             first=0
             [ $(date +%s) -ge $END ] && break
             sleep 150
