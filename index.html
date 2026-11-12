@@ -332,7 +332,7 @@ html[data-theme=dark] #sgBody,html[data-theme=dark] .sgsec .hm-b{background:var(
 .sp-none{font-size:.82rem;color:var(--mut)}
 .sp-strip{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;height:20px}
 .sp-strip i{border-radius:3px;cursor:pointer;min-width:0}.sp-strip i.on{outline:2px solid var(--fg);outline-offset:1px}
-.c-good{background:#3f9a3c}.c-marg{background:#e8b443}.c-no{background:#d36b5a}.c-night{background:#c9d3db}.c-past{background:repeating-linear-gradient(135deg,#d7dee4 0 3px,#eef2f5 3px 6px)}
+.c-good{background:#3f9a3c}.c-marg{background:#e8b443}.c-no{background:#d36b5a}.c-past{background:repeating-linear-gradient(135deg,#d7dee4 0 3px,#eef2f5 3px 6px)}
 .sp-ax{display:flex;justify-content:space-between;font-size:.66rem;color:var(--mut);margin-top:2px}
 .sp-tip{font-size:.76rem;margin-top:5px;padding:5px 8px;border-radius:8px;background:var(--soft);color:var(--fg)}
 .sp-now{font-size:.8rem;margin-top:6px;padding:5px 8px;border-radius:8px;border-left:4px solid #3f9a3c;background:var(--soft)}.sp-now.marg{border-left-color:#e8b443}.sp-now.no{border-left-color:#d36b5a}
@@ -340,8 +340,12 @@ html[data-theme=dark] #sgBody,html[data-theme=dark] .sgsec .hm-b{background:var(
 .sp-crit{font-size:.76rem;color:var(--mut);margin-top:6px}.sp-crit summary{cursor:pointer;font-weight:700}
 .sp-note{font-size:.78rem;font-weight:700;margin:6px 0 0;color:#7a5200}
 html[data-theme=dark] .sp-w.good{background:#1f4521;color:#b9efb3}html[data-theme=dark] .sp-w.mostly{background:#34421a;color:#dcefb0}html[data-theme=dark] .sp-w.marg{background:#4a3a12;color:#ffe2a0}
-html[data-theme=dark] .c-good{background:#4fb54b}html[data-theme=dark] .c-marg{background:#d6a33a}html[data-theme=dark] .c-no{background:#b4574a}html[data-theme=dark] .c-night{background:#2c3a46}
+html[data-theme=dark] .c-good{background:#4fb54b}html[data-theme=dark] .c-marg{background:#d6a33a}html[data-theme=dark] .c-no{background:#b4574a}
 html[data-theme=dark] .c-past{background:repeating-linear-gradient(135deg,#24323d 0 3px,#1b2731 3px 6px)}html[data-theme=dark] .sp-note{color:#ffd27a}
+
+.sp-strip i.n{box-shadow:inset 0 -6px 0 #1d2a3566}.sp-lg i.n{box-shadow:inset 0 -5px 0 #1d2a3566}
+html[data-theme=dark] .sp-strip i.n,html[data-theme=dark] .sp-lg i.n{box-shadow:inset 0 -6px 0 #000a}
+.sp-w .sp-nt{display:inline-block;font-weight:600;opacity:.85}.sp-w.cont{opacity:.9}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Forecast skill (preview): accuracy-weighted model blend + station bias correction =====
 // Weights and corrections are computed daily by scripts/verify.py (forecast_skill.py) from the 1-day-ahead
 // forecast-vs-station history and stored in Firestore private/verification ("skill"). Cached in localStorage.
@@ -1450,7 +1454,7 @@ const rainOf=x=>x?(num(x.rv)?x.rv:medA(x.r)):null;
 function classify(x,ahead){ahead=ahead||[];
  const t=medA(x.t),rh=num(x.rh)?x.rh:null,w2=num(x.w)?x.w*T.W2M:null,g2=num(x.gu)?x.gu*T.W2M:null,rain=rainOf(x),p=num(x.p)?x.p:null,dt=deltaT(t,rh);
  const o={t,rh,w2,g2,rain,p,dt,c:'good',why:[]};
- if(x.day===0||x.day===false){o.c='night';return o}
+ o.night=x.day===0||x.day===false; // night hours use the same criteria (calm <3 km/h stays 'not suitable': inversion risk)
  const bad=[],mar=[];
  if(!num(w2)||!num(t))bad.push('nodata');
  if(num(w2)){if(w2>=T.WMAX)bad.push('wind');else if(w2<T.CALM)bad.push('calm');else if(w2>T.WGOOD)mar.push('windm')}
@@ -1462,17 +1466,25 @@ function classify(x,ahead){ahead=ahead||[];
  if(num(t)){if(t>T.TMAX)bad.push('hot');else if(t>T.TMARG)mar.push('warm')}
  if(num(dt)){if(dt>T.DTMAX)bad.push('dry');else if(dt>T.DTGOOD)mar.push('drym');else if(dt<T.DTLO)mar.push('humid')}
  o.c=bad.length?'no':mar.length?'marg':'good';o.why=bad.length?bad:mar;return o}
-// cls: array of {h, c}; windows = runs of good/marginal hours (not past, not night) of at least MINLEN hours
+// cls: array of {h, c, night}; windows = runs of good/marginal hours (not past) of at least MINLEN hours, day or night (h may run past 24)
 function windows(cls,minLen){minLen=minLen||T.MINLEN;const W=[];let cur=null;
- cls.forEach(o=>{const ok=!o.past&&(o.c==='good'||o.c==='marg');if(ok){if(cur&&cur.b===o.h){cur.b=o.h+1;cur.n++;if(o.c==='good')cur.g++;else o.why.forEach(w=>cur.why[w]=(cur.why[w]||0)+1)}
-   else{cur={a:o.h,b:o.h+1,n:1,g:o.c==='good'?1:0,why:{}};if(o.c!=='good')o.why.forEach(w=>cur.why[w]=1);W.push(cur)}}else cur=null});
+ cls.forEach(o=>{const ok=!o.past&&(o.c==='good'||o.c==='marg');if(ok){if(cur&&cur.b===o.h){cur.b=o.h+1;cur.n++;if(o.night)cur.nn++;if(o.c==='good')cur.g++;else o.why.forEach(w=>cur.why[w]=(cur.why[w]||0)+1)}
+   else{cur={a:o.h,b:o.h+1,n:1,nn:o.night?1:0,g:o.c==='good'?1:0,why:{}};if(o.c!=='good')o.why.forEach(w=>cur.why[w]=1);W.push(cur)}}else cur=null});
  return W.filter(w=>w.n>=minLen).map(w=>Object.assign(w,{kind:w.g===w.n?'good':w.g>=w.n/2?'mostly':'marg',why:Object.keys(w.why).sort((a,b)=>w.why[b]-w.why[a])}))}
-// analyse a day: hrs = svHours(d) (+ next day's hours for the look-ahead); nowH = current ART hour for today (earlier hours = past)
-function analyse(hrs,nextHrs,nowH){const all=(hrs||[]).concat(nextHrs||[]);
- const cls=(hrs||[]).map((x,i)=>{const o=classify(x,all.slice(i+1,i+4));o.h=parseInt(String(x.H).slice(0,2),10);o.past=num(nowH)&&o.h<nowH;return o});
- const W=windows(cls);const why={};cls.forEach(o=>{if(!o.past&&o.c==='no')o.why.forEach(w=>why[w]=(why[w]||0)+1)});
- return{cls,W,main:Object.keys(why).sort((a,b)=>why[b]-why[a]).slice(0,2)}}
-G.svSprayCore={T,deltaT,classify,windows,analyse};
+// analyse consecutive days as one continuous series so windows can run past midnight.
+// days = [svHours(today), svHours(+1), ...] (an extra day beyond `scope` is only used for the rain look-ahead);
+// nowH = current ART hour (earlier hours of day 0 are past). Windows are listed under the day they start; a window that
+// reaches the end of the scope is cut there (cut=true). Hour index g = day*24 + hour.
+function analyseDays(days,nowH,scope){scope=scope||days.length;const all=[];
+ (days||[]).forEach((hs,k)=>(hs||[]).forEach(x=>all.push({x,k,h:parseInt(String(x.H).slice(0,2),10)})));
+ const cls=all.map((e,i)=>{const o=classify(e.x,all.slice(i+1,i+4).map(y=>y.x));o.k=e.k;o.h=e.h;o.g=e.k*24+e.h;o.past=e.k===0&&num(nowH)&&e.h<nowH;return o});
+ const ok=o=>o&&(o.c==='good'||o.c==='marg');
+ const W=windows(cls.filter(o=>o.k<scope).map(o=>Object.assign({},o,{h:o.g})));
+ W.forEach(w=>{w.k=Math.floor(w.a/24);w.cut=ok(cls.find(o=>o.g===w.b))&&w.b>=scope*24});
+ return Array.from({length:scope},(_,k)=>{const c=cls.filter(o=>o.k===k),why={};c.forEach(o=>{if(!o.past&&o.c==='no')o.why.forEach(z=>why[z]=(why[z]||0)+1)});
+  return{cls:c,W:W.filter(w=>w.k===k),cont:W.filter(w=>w.k<k&&w.b>k*24),main:Object.keys(why).sort((a,b)=>why[b]-why[a]).slice(0,2)}})}
+function analyse(hrs,nextHrs,nowH){return analyseDays([hrs||[],nextHrs||[]],nowH,1)[0]}
+G.svSprayCore={T,deltaT,classify,windows,analyse,analyseDays};
 if(typeof document==='undefined')return;
 // ---------- UI ----------
 const ES=()=>G.SV_LANG==='es',tx=(e,s)=>ES()?s:e,$=id=>document.getElementById(id),fx=(v,d=0)=>num(v)?v.toFixed(d):'—',pad=h=>String(h).padStart(2,'0');
@@ -1481,27 +1493,32 @@ const WHY={wind:['wind ≥15 km/h','viento ≥15 km/h'],windm:['wind 12–15 km/
 const why=k=>(WHY[k]||[k,k])[ES()?1:0];
 const artNow=()=>new Date(Date.now()-3*3600e3),dayS=k=>new Date(artNow().getTime()+k*864e5).toISOString().slice(0,10);
 const dayName=(d,k)=>k===0?tx('Today','Hoy'):k===1?tx('Tomorrow','Mañana'):new Date(d+'T12:00:00-03:00').toLocaleDateString(ES()?'es-AR':'en-GB',{weekday:'long',day:'numeric',month:'short',timeZone:'America/Argentina/Buenos_Aires'});
-const KL={good:['Good','Buena'],mostly:['Mostly good','Mayormente buena'],marg:['Marginal','Marginal']},CL={good:['Good','Buena'],marg:['Marginal','Marginal'],no:['Not suitable','No apta'],night:['Night','Noche'],past:['Past','Pasada']};
-function tip(o,H){if(o.c==='night')return `${pad(o.h)}:00 · ${tx('night','noche')}`;
- return `${pad(o.h)}–${pad(o.h+1)}:00 · ${tx(CL[o.c][0],CL[o.c][1])}${o.why.length?' ('+o.why.map(why).join(', ')+')':''} · ${tx('wind','viento')} ${fx(o.w2)} km/h, ${tx('gusts','ráfagas')} ${fx(o.g2)} km/h (2 m) · ${fx(o.t,1)} °C · ${tx('RH','HR')} ${fx(o.rh)} % · Delta T ${fx(o.dt,1)} °C · ${tx('rain','lluvia')} ${num(o.rain)?(o.rain<0.1?'0':o.rain.toFixed(1)):'—'} mm${num(o.p)?` (${o.p} %)`:''}`}
+const KL={good:['Good','Buena'],mostly:['Mostly good','Mayormente buena'],marg:['Marginal','Marginal']},CL={good:['Good','Buena'],marg:['Marginal','Marginal'],no:['Not suitable','No apta'],past:['Past','Pasada']};
+function tip(o){
+ return `${o.night?'🌙 ':''}${pad(o.h)}–${pad(o.h+1)}:00 · ${tx(CL[o.c][0],CL[o.c][1])}${o.why.length?' ('+o.why.map(why).join(', ')+')':''} · ${tx('wind','viento')} ${fx(o.w2)} km/h, ${tx('gusts','ráfagas')} ${fx(o.g2)} km/h (2 m) · ${fx(o.t,1)} °C · ${tx('RH','HR')} ${fx(o.rh)} % · Delta T ${fx(o.dt,1)} °C · ${tx('rain','lluvia')} ${num(o.rain)?(o.rain<0.1?'0':o.rain.toFixed(1)):'—'} mm${num(o.p)?` (${o.p} %)`:''}`}
 function stationCheck(){const s=G.SVST;if(!s||!num(s.wind))return'';const age=(Date.now()-new Date(s.observed).getTime())/6e4;if(!(age<90))return'';
  const w=s.wind,g=num(s.gust)?s.gust:null;const bad=w>=T.WMAX||(num(g)&&g>=T.GMAX),calm=w<T.CALM,mar=!bad&&!calm&&(w>T.WGOOD||(num(g)&&g>=T.GGOOD));
  const st=bad?tx('above the limit','por encima del límite'):calm?tx('calm – watch for inversion','calma – atención a inversión'):mar?tx('marginal','marginal'):tx('within range','dentro del rango');
  const tm=new Date(s.observed).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'});
  return `<div class="sp-now ${bad?'no':calm||mar?'marg':'good'}">📍 ${tx('Station now','Estación ahora')} (${tm}): ${tx('wind','viento')} <b>${fx(w,1)} km/h</b>${num(g)?`, ${tx('gusts','ráfagas')} <b>${fx(g,1)} km/h</b>`:''} → ${st}</div>`}
 let sel=null;
+// window chip: start/end relative to day k; past midnight -> '(+1 day)'; night hours -> moon + inversion note
+function chip(w,k,cont){const a=w.a-24*k,b=w.b-24*k,e=b>24?`${pad(b-24)} h <small>(${tx('next day','día siguiente')})</small>`:`${pad(b)} h`;
+ const nt=w.nn?` <small class="sp-nt">🌙 ${w.nn===w.n?tx('night','noche'):tx('incl. night','incluye noche')} – ${tx('watch for inversion','atención a inversión')}</small>`:'';
+ return `<span class="sp-w ${w.kind}${cont?' cont':''}" title="${w.why.length?tx('Marginal because: ','Marginal por: ')+w.why.map(why).join(', '):''}">${cont?'↳ 00':pad(a)}–${e}${w.cut?` <small>(${tx('continues','continúa')})</small>`:''} · ${tx(KL[w.kind][0],KL[w.kind][1])}${w.kind!=='good'&&w.why.length?` <small>(${w.why.slice(0,2).map(why).join(', ')})</small>`:''}${nt}${cont?` <small>(${tx('from the night before','desde la noche anterior')})</small>`:''}</span>`}
 function render(){const el=$('spBody');if(!el||typeof G.svHours!=='function'||!G.SV_HR)return;const nowH=artNow().getUTCHours();let h='';
- for(let k=0;k<3;k++){const d=dayS(k);const H=G.svHours(d);if(!H||H.length<20)continue;const A=analyse(H,G.svHours(dayS(k+1))||[],k===0?nowH:null);
-  const ws=A.W.length?A.W.map(w=>`<span class="sp-w ${w.kind}" title="${w.why.length?tx('Marginal because: ','Marginal por: ')+w.why.map(why).join(', '):''}">${pad(w.a)}–${pad(w.b%24===0&&w.b?24:w.b)} h · ${tx(KL[w.kind][0],KL[w.kind][1])}${w.kind!=='good'&&w.why.length?` <small>(${w.why.slice(0,2).map(why).join(', ')})</small>`:''}</span>`).join('')
-   :`<span class="sp-none">${k===0&&nowH>=19?tx('No window left today','No quedan ventanas hoy'):tx('No suitable window','Sin ventana apta')}${A.main.length?` – ${A.main.map(why).join(', ')}`:''}</span>`;
-  const cells=A.cls.map(o=>`<i class="c-${o.past?'past':o.c}" data-k="${k}" data-h="${o.h}" title="${tip(o)}"></i>`).join('');
+ const days=[0,1,2,3].map(k=>G.svHours(dayS(k))||[]);const AD=analyseDays(days,nowH,3);
+ for(let k=0;k<3;k++){const d=dayS(k);const H=days[k];if(!H||H.length<20)continue;const A=AD[k];
+  const ws=A.W.length||A.cont.length?A.cont.map(w=>chip(w,k,true)).join('')+A.W.map(w=>chip(w,k,false)).join('')
+   :`<span class="sp-none">${tx('No suitable window','Sin ventana apta')}${A.main.length?` – ${A.main.map(why).join(', ')}`:''}</span>`;
+  const cells=A.cls.map(o=>`<i class="c-${o.past?'past':o.c}${o.night?' n':''}" data-k="${k}" data-h="${o.h}" title="${tip(o)}"></i>`).join('');
   h+=`<div class="sp-day" data-k="${k}"><div class="sp-dh"><b>${dayName(d,k)}</b><span class="sp-ws">${ws}</span></div><div class="sp-strip" role="img" aria-label="${tx('Hourly suitability','Aptitud por hora')}">${cells}</div><div class="sp-ax"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div><div class="sp-tip" hidden></div>${k===0?stationCheck():''}</div>`;
   G.SV_SPRAY=G.SV_SPRAY||{};G.SV_SPRAY[d]=A}
  if(!h){el.innerHTML=`<span class="muted">${tx('Hourly forecast not available.','Pronóstico por hora no disponible.')}</span>`;return}
- h+=`<div class="sp-lg"><span><i class="c-good"></i>${tx('Good','Buena')}</span><span><i class="c-marg"></i>${tx('Marginal','Marginal')}</span><span><i class="c-no"></i>${tx('Not suitable','No apta')}</span><span><i class="c-night"></i>${tx('Night','Noche')}</span></div>`;
+ h+=`<div class="sp-lg"><span><i class="c-good"></i>${tx('Good','Buena')}</span><span><i class="c-marg"></i>${tx('Marginal','Marginal')}</span><span><i class="c-no"></i>${tx('Not suitable','No apta')}</span><span><i class="c-good n"></i>🌙 ${tx('night hours (dark band)','horas de noche (franja oscura)')}</span></div>`;
  h+=`<details class="sp-crit"><summary>${tx('Criteria','Criterios')}</summary>${tx(
-  `<b>Good</b>: daylight, wind 3–12 km/h at 2 m, gusts below 20 km/h (2 m), no rain in the hour or the next 2 h (under 0.1 mm) and rain chance below 30 %, temperature up to 28 °C, Delta T 2–8 °C. <b>Marginal</b>: wind 12–15 km/h, gusts 20–25 km/h, Delta T 8–10 °C or below 2 °C, 28–30 °C, rain chance 30–49 %, 0.1–0.2 mm, or rain in the 3rd hour ahead. <b>Not suitable</b>: wind 15 km/h or more, calm below 3 km/h (inversion and drift risk), gusts 25 km/h or more, rain of 0.2 mm or more or rain chance 50 % or more in the hour or next 2 h, above 30 °C, Delta T above 10 °C. Windows of at least 2 h are listed. Forecast wind (10 m) is converted to 2 m like the 'Windy' label; temperatures use the station-adjusted blend.`,
-  `<b>Buena</b>: de día, viento 3–12 km/h a 2 m, ráfagas menores a 20 km/h (2 m), sin lluvia en la hora ni en las 2 h siguientes (menos de 0,1 mm) y probabilidad de lluvia menor a 30 %, temperatura hasta 28 °C, Delta T 2–8 °C. <b>Marginal</b>: viento 12–15 km/h, ráfagas 20–25 km/h, Delta T 8–10 °C o menor a 2 °C, 28–30 °C, probabilidad de lluvia 30–49 %, 0,1–0,2 mm o lluvia en la 3.ª hora siguiente. <b>No apta</b>: viento de 15 km/h o más, calma por debajo de 3 km/h (riesgo de inversión y deriva), ráfagas de 25 km/h o más, lluvia de 0,2 mm o más o probabilidad de 50 % o más en la hora o las 2 h siguientes, más de 30 °C, Delta T mayor a 10 °C. Se listan ventanas de al menos 2 h. El viento pronosticado (10 m) se convierte a 2 m como en la etiqueta 'Ventoso'; las temperaturas usan la combinación ajustada a la estación.`)}</details>`;
+  `<b>Good</b>: wind 3–12 km/h at 2 m, gusts below 20 km/h (2 m), no rain in the hour or the next 2 h (under 0.1 mm) and rain chance below 30 %, temperature up to 28 °C, Delta T 2–8 °C. <b>Marginal</b>: wind 12–15 km/h, gusts 20–25 km/h, Delta T 8–10 °C or below 2 °C, 28–30 °C, rain chance 30–49 %, 0.1–0.2 mm, or rain in the 3rd hour ahead. <b>Not suitable</b>: wind 15 km/h or more, calm below 3 km/h (inversion and drift risk), gusts 25 km/h or more, rain of 0.2 mm or more or rain chance 50 % or more in the hour or next 2 h, above 30 °C, Delta T above 10 °C. Day and night hours use the same criteria; windows of at least 2 h are listed and can run past midnight (🌙 = includes night hours: calm air and Delta T below 2 °C at night signal a temperature inversion – check for hanging smoke or dust and no wind before spraying). Forecast wind (10 m) is converted to 2 m like the 'Windy' label; temperatures use the station-adjusted blend.`,
+  `<b>Buena</b>: viento 3–12 km/h a 2 m, ráfagas menores a 20 km/h (2 m), sin lluvia en la hora ni en las 2 h siguientes (menos de 0,1 mm) y probabilidad de lluvia menor a 30 %, temperatura hasta 28 °C, Delta T 2–8 °C. <b>Marginal</b>: viento 12–15 km/h, ráfagas 20–25 km/h, Delta T 8–10 °C o menor a 2 °C, 28–30 °C, probabilidad de lluvia 30–49 %, 0,1–0,2 mm o lluvia en la 3.ª hora siguiente. <b>No apta</b>: viento de 15 km/h o más, calma por debajo de 3 km/h (riesgo de inversión y deriva), ráfagas de 25 km/h o más, lluvia de 0,2 mm o más o probabilidad de 50 % o más en la hora o las 2 h siguientes, más de 30 °C, Delta T mayor a 10 °C. Las horas de día y de noche usan los mismos criterios; se listan ventanas de al menos 2 h, que pueden pasar la medianoche (🌙 = incluye horas de noche: aire en calma y Delta T menor a 2 °C de noche indican inversión térmica – verificá que no haya humo o polvo suspendido y falta de viento antes de pulverizar). El viento pronosticado (10 m) se convierte a 2 m como en la etiqueta 'Ventoso'; las temperaturas usan la combinación ajustada a la estación.`)}</details>`;
  h+=`<p class="sp-note">⚠️ ${tx('Planning guide only – check conditions on site before spraying.','Solo como guía de planificación – verificá las condiciones en el lote antes de pulverizar.')}</p>`;
  el.innerHTML=h;$('spray').classList.remove('sk');const hd=$('spray').querySelector('.gl-h');if(hd)hd.textContent=tx('Spray windows','Ventanas de pulverización');const sb=$('spray').querySelector('.sp-sub');if(sb)sb.textContent=tx('planning guide · next 3 days · ART','guía de planificación · próximos 3 días · ART')}
 document.addEventListener('click',e=>{const c=e.target.closest('.sp-strip i');if(!c)return;const day=c.closest('.sp-day'),t=day.querySelector('.sp-tip');
