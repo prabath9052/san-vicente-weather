@@ -346,6 +346,10 @@ html[data-theme=dark] .c-past{background:repeating-linear-gradient(135deg,#24323
 .sp-strip i.n{box-shadow:inset 0 -6px 0 #1d2a3566}.sp-lg i.n{box-shadow:inset 0 -5px 0 #1d2a3566}
 html[data-theme=dark] .sp-strip i.n,html[data-theme=dark] .sp-lg i.n{box-shadow:inset 0 -6px 0 #000a}
 .sp-w .sp-nt{display:inline-block;font-weight:600;opacity:.85}.sp-w.cont{opacity:.9}
+
+/* placed between the 7-day summary and the Farm notes: same spacing as the boxes around it */
+#spray{margin:12px 0 0}
+#spray #spBody{flex:1 1 100%;min-width:0}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Forecast skill (preview): accuracy-weighted model blend + station bias correction =====
 // Weights and corrections are computed daily by scripts/verify.py (forecast_skill.py) from the 1-day-ahead
 // forecast-vs-station history and stored in Firestore private/verification ("skill"). Cached in localStorage.
@@ -472,7 +476,6 @@ html[data-theme=dark] .sp-strip i.n,html[data-theme=dark] .sp-lg i.n{box-shadow:
 <main>
 <nav class="tabs" id="tabs" role="tablist"><button role="tab" data-t="fc" class="on"><span class="ti">🗓</span><span>Forecast</span></button><button role="tab" data-t="map"><span class="ti">🗺</span><span>Rain map</span></button><button role="tab" data-t="st"><span class="ti">📡</span><span>Station</span></button></nav>
 <section class="glance sk" id="glance" data-tab="fc"><b class="gl-h">Today at a glance</b><span id="glBody"></span></section>
-<section class="glance spray sk" id="spray" data-tab="fc"><b class="gl-h">Spray windows</b><span class="sp-sub">planning guide · next 3 days · ART</span><div id="spBody"></div></section>
 <div id="recBanner" class="rec-b" hidden><div id="recIntro"><span>Your account has no recovery email. Add one so you can reset your password if you forget it.</span> <button type="button" id="recOpen">Add recovery email</button></div>
 <form id="recForm" hidden novalidate><label for="recEmail"><span>Recovery email</span></label><input type="email" id="recEmail" autocomplete="email" autocapitalize="none" maxlength="120"><div id="recPwWrap" hidden><label for="recPw"><span>For security, enter your current password</span></label><input type="password" id="recPw" autocomplete="current-password"></div><div class="rec-btns"><button type="submit" id="recSave">Send verification email</button><button type="button" id="recCancel">Cancel</button></div><div class="ag-err" id="recErr" role="alert" hidden></div></form><div id="recDone" class="ag-ok" hidden></div></div>
 <div class="status" id="status"></div>
@@ -484,6 +487,7 @@ html[data-theme=dark] .sp-strip i.n,html[data-theme=dark] .sp-lg i.n{box-shadow:
 <div id="pmap"><div class="pm-msg" id="pmMsg">Loading precipitation grid…</div><div class="pm-time" id="pmTime"></div><div class="pm-hint" id="pmHint" aria-live="polite">Use two fingers to move the map</div><div class="pm-legend" id="pmLegend"></div>
 <div class="pm-hbar" id="pmHbar"><span>Hour</span><input type="range" id="pmHr" min="0" max="23" step="1" value="0" aria-label="Hour of day"><b id="pmHrL">00:00</b></div><div class="pm-bar"><button id="pmPlay" title="Play" aria-label="Play">▶</button><div class="pm-days" id="pmDays"></div><button id="pmPrev" aria-label="Previous">‹</button><button id="pmNext" aria-label="Next">›</button><button id="pmMode" aria-pressed="false" style="display:none">Day total</button></div></div>
 <p class="muted" style="margin:.3em 0 0">Overlay: median of Open-Meteo models (ECMWF, GFS, ICON, GEM, best match) on a 0.75° grid (~1,050 points) — hourly precipitation (mm in the hour ending at the time shown; model-mean timing scaled to the daily median total, so hours add up to the day) or daily total (median). Grid is pre-computed every 3 h by a GitHub Action (falls back to a slower direct Open-Meteo daily fetch if the file is missing or stale). The San Vicente label shows the app's own forecast: the same scaled hourly mm as the hourly popup, or the 7-day summary value for day totals. <span id="pmSrc"></span> Basemap © Esri (World Shaded Relief), boundaries &amp; labels © Esri. Map: Leaflet.</p></section>
+<section class="glance spray sk" id="spray" data-tab="fc"><b class="gl-h">Spray windows</b><span class="sp-sub">planning guide · next 3 days · ART</span><div id="spBody"></div></section>
 <section class="box"><h2>Farm notes</h2><div id="farm">—</div>
 <p class="muted">Field-work dry day = all sources ≤1 mm and rain chance &lt;30%.</p></section>
 <section class="box"><details><summary><b>Per-model detail table</b></summary><div class="scroll" id="detail"></div></details></section>
