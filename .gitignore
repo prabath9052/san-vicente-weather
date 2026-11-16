@@ -8,3 +8,5 @@ data/humidity-alert-state.json
 data/verification.json
 data/eto-state.json
 data/health-state.json
+data/smn-alerts.json
+data/smn-state.json
