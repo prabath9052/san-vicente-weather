@@ -2,6 +2,7 @@ name: Update station current conditions
 # GitHub delays */15 schedules (measured 21-51 min gaps), so each run keeps polling
 # HOBOlink for ~27 min (station logs/uploads every 10 min). Station data, alert history and alert state are
 # private: restored from Firestore 'private/*' at start (fs_pull) and saved back after each reading (fs_sync).
+# Each pass also checks station health and (every 10 min) official SMN alerts for San Alberto.
 # Nothing is committed to the repo.
 on:
   schedule:
@@ -56,6 +57,11 @@ jobs:
             if [ -n "$FORCE_THRESHOLD" ]; then DRY_RUN=1 STATE_FILE=/tmp/health-test.json python3 -u scripts/station_health.py || true
             else h0=$(cat data/health-state.json 2>/dev/null | sha1sum); python3 -u scripts/station_health.py || echo "health check failed (continuing)"
               if [ "$h0" != "$(cat data/health-state.json 2>/dev/null | sha1sum)" ]; then ONLY_DOCS=healthState,alertsLog python3 -u scripts/fs_sync.py || true; fi; fi
+            # official SMN alerts for San Alberto (CAP feed): at most every 10 min; test runs never send
+            if [ $(( $(date +%s) - ${smn_t:-0} )) -ge 600 ]; then smn_t=$(date +%s)
+              if [ -n "$FORCE_THRESHOLD" ]; then DRY_RUN=1 STATE_FILE=/tmp/smn-test.json OUT_FILE=/tmp/smn-test-out.json python3 -u scripts/smn_alerts.py || true
+              else s0=$(cat data/smn-alerts.json data/smn-state.json 2>/dev/null | sha1sum); python3 -u scripts/smn_alerts.py || echo "smn alerts step failed (continuing)"
+                if [ "$s0" != "$(cat data/smn-alerts.json data/smn-state.json 2>/dev/null | sha1sum)" ]; then ONLY_DOCS=smnAlerts,smnState,alertsLog python3 -u scripts/fs_sync.py || true; fi; fi; fi
             first=0
             [ $(date +%s) -ge $END ] && break
             sleep 150

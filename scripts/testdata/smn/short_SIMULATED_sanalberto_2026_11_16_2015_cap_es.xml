@@ -1,0 +1,10 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+		<?xml-stylesheet type="text/xsl"  href="https://ssl.smn.gob.ar/feeds/alerta_cap_es.xsl"?>
+		
+<!-- SIMULATED sample for tests (not issued by SMN) -->
+<cap:alert xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+	<cap:identifier>urn:oid:2.49.0.1.32.0.2026.11.16.20.15.00</cap:identifier><cap:sender>smn@smn.gov.ar</cap:sender><cap:sent>2026-11-16T20:15:00-03:00</cap:sent><cap:status>Actual</cap:status><cap:msgType>Alert</cap:msgType><cap:scope>Public</cap:scope><cap:info>
+						<cap:category>Met</cap:category><cap:event>TORMENTAS SEVERAS</cap:event><cap:urgency>Immediate</cap:urgency><cap:severity>Severe</cap:severity><cap:certainty>Observed</cap:certainty><cap:expires>2026-11-16T21:15:00-03:00</cap:expires><cap:senderName>SERVICIO METEOROLOGICO NACIONAL - ARGENTINA</cap:senderName><cap:headline>AVISO NARANJA POR TORMENTAS SEVERAS CON LLUVIAS INTENSAS, RAFAGAS Y CAIDA DE GRANIZO</cap:headline><cap:description>TORMENTAS SEVERAS CON LLUVIAS INTENSAS, RAFAGAS Y CAIDA DE GRANIZO</cap:description><cap:instruction>Seguí las instrucciones de las autoridades locales. La calma es fundamental en estas situaciones. Permanecé en construcciones cerradas como casas, escuelas o edificios públicos. Evitá circular por calles inundadas o afectadas. Retirá o asegurá objetos que puedan ser arrastrados por el viento. No te refugies debajo de marquesinas, carteles publicitarios, árboles o postes. Mantenete alejado de artefactos eléctricos y evitá el uso de teléfonos con cable. Si estás al aire libre, buscá refugio inmediato en un edificio, casa o vehículo cerrado. Para minimizar el riesgo de ser alcanzado por un rayo, no permanezcas en playas, ríos, lagunas o piletas.</cap:instruction><cap:web>https://ssl.smn.gob.ar/feeds/CAP/avisocortoplazo/2026_11_16_2015_cap_es.xml</cap:web><cap:area><cap:areaDesc>CÓRDOBA: Pocho - SAN ALBERTO - San Javier. </cap:areaDesc><cap:polygon>-31.20,-65.70 -31.20,-65.00 -32.30,-65.00 -32.30,-65.70 -31.20,-65.70</cap:polygon>
+	   </cap:area>
+	</cap:info>
+</cap:alert>
