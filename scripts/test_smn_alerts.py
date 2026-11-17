@@ -46,11 +46,13 @@ ok(S.message("start", o, "es")[0] == "⚠️ Alerta naranja del SMN: Tormentas",
 ok(S.message("start", a, "en")[0] == "⛈️ SMN short-term warning (orange): severe storms", S.message("start", a, "en"))
 # 5 end-to-end dry run of main() with the saved feed: never sends, writes the app file, dedupes across runs, 'ended' once
 t = tempfile.mkdtemp(); os.makedirs(t + "/data")
-env = {k: v for k, v in os.environ.items() if k not in ("VAPID_PRIVATE_KEY", "FB_BOT_PASSWORD")}
+env = {k: v for k, v in os.environ.items() if k not in ("VAPID_PRIVATE_KEY", "FB_BOT_PASSWORD", "SMN_MT")}
 env.update(DRY_RUN="1", FEED_FILE=os.path.join(D, "feed.xml"), CAP_DIR=D, CAP_MAP=os.path.join(D, "urlmap.json"))
 run = lambda now: subprocess.run([sys.executable, os.path.join(HERE, "smn_alerts.py")], cwd=t, env=dict(env, SIM_NOW=now), capture_output=True, text=True)
 x = run("2026-11-16T16:30:00-03:00"); ok(x.returncode == 0 and x.stdout.count("would push") == 2, x.stdout + x.stderr)
 out = json.load(open(t + "/data/smn-alerts.json")); ok([(z["kind"], z["level"]) for z in out["alerts"]] == [("alert", "orange"), ("short", "orange"), ("alert", "yellow")], out["alerts"])
+ok(all(z["en"] and z["en"]["how"] == "dict" and z["en"]["description"] and z["en"]["instruction"] for z in out["alerts"]), [z.get("en") for z in out["alerts"]])
+ok(out["source"].endswith("(CC BY 2.5 AR)") and out["alerts"][2]["description"].startswith("El área") and out["alerts"][2]["en"]["description"].startswith("The area"), "Spanish kept + English added")
 x = run("2026-11-16T16:45:00-03:00"); ok("pushes: 0" in x.stdout, x.stdout)
 x = run("2026-11-17T10:00:00-03:00"); ok("would push end" in x.stdout and json.load(open(t + "/data/smn-alerts.json"))["alerts"] == [], x.stdout)
 x = run("2026-11-17T10:15:00-03:00"); ok("pushes: 0" in x.stdout, x.stdout)
