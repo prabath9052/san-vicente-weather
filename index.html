@@ -362,6 +362,16 @@ html[data-theme=dark] .smn-a.lv-yellow{background:#3a3310;border-color:#e6c200;c
 html[data-theme=dark] .smn-a.lv-orange{background:#45280c;border-color:#ff8c1a;color:#ffd9b0}
 html[data-theme=dark] .smn-a.lv-red{background:#4a1515;border-color:#ff4d4d;color:#ffd0cc}
 .smn-lv{font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px;background:currentColor;color:inherit}.smn-a .smn-lv{background:#0000001a}html[data-theme=dark] .smn-a .smn-lv{background:#ffffff22}
+</style><style id="popc">/* tab bar stays above popups (backdrops are z 2000-3000; model popup .mpop 9999 and sign-in 100000 stay on top) */
+body.svov .tabs{z-index:3600}
+.tabs.tb-pin{position:fixed;top:var(--pt);left:var(--pl);width:var(--pw);max-width:none;margin:0;box-sizing:border-box;box-shadow:0 6px 24px #0005}
+/* phone: tab bar fixed at the bottom -> popups end above it */
+body.svov .hm-bg:not(.anch){bottom:var(--tbh,0px)}
+body.svov :is(.tg-bg,.al-bg,.vf-bg){padding-bottom:calc(var(--tbh,0px) + 0px)}
+/* desktop: centred popups start below the pinned bar */
+@media(min-width:601px){body.svov :is(.tg-bg,.al-bg,.vf-bg){padding-top:var(--tbt,16px)}
+ body.svov :is(.tg-m,.al-box,.vf-box){max-height:calc(100vh - var(--tbt,16px) - 16px)}}
+@media(max-width:600px){body.svov .tg-m{max-height:calc(100vh - var(--tbh,0px) - 40px)}body.svov :is(.al-box,.vf-box){max-height:calc(100vh - var(--tbh,0px) - 24px)}}
 </style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script>// ===== Forecast skill (preview): accuracy-weighted model blend + station bias correction =====
 // Weights and corrections are computed daily by scripts/verify.py (forecast_skill.py) from the 1-day-ahead
 // forecast-vs-station history and stored in Firestore private/verification ("skill"). Cached in localStorage.
@@ -1576,6 +1586,52 @@ G.addEventListener('svstation',later);document.addEventListener('click',e=>{if(e
  const go=()=>{setTimeout(load,1300);setInterval(load,5*60e3);setInterval(render,60e3)};if(document.readyState!=='loading')go();else document.addEventListener('DOMContentLoaded',go);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(render,250)});
 })(window);
+</script>
+<script>// ===== Popups vs tabs: the tab bar stays usable while a popup is open; switching tab, tapping a tab or Back closes every popup =====
+(function(){
+const G=window,D=document,$=id=>D.getElementById(id);
+// every overlay the app opens: [is it open?, how to close it]
+const OV=[
+ [()=>{const b=$('hmBg');return !!(b&&b.classList.contains('on'))},()=>{G.svClosePop&&G.svClosePop();G.svHourlyClose&&G.svHourlyClose()}],
+ [()=>{const b=$('tgBg');return !!(b&&!b.hidden)},()=>{const x=$('tgX');x&&x.click()}],
+ [()=>{const b=$('sgBg');return !!(b&&!b.hidden&&b.classList.contains('on'))},()=>{const x=$('sgX');x&&x.click()}],
+ [()=>{const b=$('alBg');return !!(b&&b.classList.contains('on'))},()=>{const x=$('alX');x&&x.click()}],
+ [()=>!!D.querySelector('.vf-bg.on'),()=>{const x=$('vfX');x&&x.click()}]];
+const anyOpen=()=>OV.some(o=>o[0]());
+function closeAll(){let n=0;OV.forEach(o=>{if(o[0]()){n++;try{o[1]()}catch(e){}}});
+ G.svClosePop&&G.svClosePop();D.querySelectorAll('.mpop').forEach(p=>p.remove());
+ if(n)D.body.style.overflow='';return n}
+G.svClosePopups=closeAll;
+// --- keep the tab bar above the dimmed backdrop ---
+let ph=null;
+function pin(){const t=$('tabs');if(!t)return;const B=D.body;
+ if(!t.classList.contains('tb-pin')&&getComputedStyle(t).position!=='fixed'){// desktop: lift the bar out of the page where it is (or at the top if scrolled away)
+  const r=t.getBoundingClientRect(),cs=getComputedStyle(t);ph=ph||D.createElement('div');ph.className='tb-ph';ph.style.height=r.height+'px';ph.style.marginTop=cs.marginTop;ph.style.marginBottom=cs.marginBottom;t.before(ph);
+  const top=r.top>=8&&r.bottom<=innerHeight*.5?r.top:8;t.style.setProperty('--pt',top+'px');t.style.setProperty('--pl',r.left+'px');t.style.setProperty('--pw',r.width+'px');t.classList.add('tb-pin')}
+ const r=t.getBoundingClientRect();
+ if(t.classList.contains('tb-pin')){B.style.setProperty('--tbt',Math.round(r.bottom+8)+'px');B.style.setProperty('--tbh','0px')}
+ else{B.style.setProperty('--tbt','0px');B.style.setProperty('--tbh',Math.max(0,Math.round(innerHeight-r.top))+'px')}
+ B.classList.add('svov');
+ // the day popup on desktop is anchored under the day cards: never let it slide under the pinned bar
+ const hb=$('hmBg');if(hb&&hb.classList.contains('anch')&&t.classList.contains('tb-pin')){const lim=Math.round(r.bottom+6);if((parseFloat(hb.style.top)||0)<lim)hb.style.top=lim+'px'}}
+function unpin(){const t=$('tabs');D.body.classList.remove('svov');if(t){t.classList.remove('tb-pin');['--pt','--pl','--pw'].forEach(v=>t.style.removeProperty(v))}if(ph&&ph.parentNode)ph.remove()}
+// --- Back button closes the popup instead of leaving the page ---
+let open=false,ours=false;
+function sync(){const o=anyOpen();
+ if(o){pin();if(!open){open=true;try{history.pushState(Object.assign({},history.state||{},{svPopup:1}),'');ours=true}catch(e){ours=false}}}
+ else if(open){open=false;unpin();if(ours&&history.state&&history.state.svPopup){ours=false;history.back()}else ours=false}}
+addEventListener('popstate',()=>{ours=false;if(anyOpen()){open=false;closeAll();unpin();open=false}});
+// --- watch the overlays (some are created later) ---
+const mo=new MutationObserver(()=>sync()),seen=new WeakSet();
+function watch(){['hmBg','tgBg','sgBg','alBg'].map($).concat([...D.querySelectorAll('.vf-bg')]).forEach(e=>{if(e&&!seen.has(e)){seen.add(e);mo.observe(e,{attributes:true,attributeFilter:['class','hidden']})}})}
+function init(){watch();new MutationObserver(()=>watch()).observe(D.body,{childList:true});
+ // tab change by any route (tab bar, links, code) closes popups
+ new MutationObserver(()=>{if(anyOpen())closeAll()}).observe(D.body,{attributes:true,attributeFilter:['data-tab']});
+ // tapping a tab, even the current one, closes popups first
+ const t=$('tabs');t&&t.addEventListener('click',e=>{if(e.target.closest('button'))closeAll()},true);
+ addEventListener('resize',()=>{if(anyOpen()){unpin();pin()}});sync()}
+D.readyState==='loading'?D.addEventListener('DOMContentLoaded',init):init();
+})();
 </script>
 <script type="module">
 // ---- Firebase Auth gate: User ID (+ real email for recovery) & password; usernames/{id} in Firestore maps ID -> email ----
