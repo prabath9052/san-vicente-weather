@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Official SMN (Servicio Meteorológico Nacional) alerts for San Vicente (San Alberto department, Córdoba).
-Source: public SMN CAP RSS feed https://ssl.smn.gob.ar/CAP/AR.php (CC BY 4.0). Each item links to one CAP 1.2 XML:
+Source: public SMN CAP RSS feed https://ssl.smn.gob.ar/CAP/AR.php (SMN open data, CC BY 2.5 AR). Each item links to one CAP 1.2 XML:
   feeds/CAP/avisocortoplazo/...  short-term warnings (storms, ~1 h validity, 'AVISO AMARILLO/NARANJA/ROJO ...'),
                                  areaDesc lists 'PROVINCE: dept - dept.' plus a polygon;
   feeds/CAP/xml_generados/...    the yellow/orange/red alerts (one file per zone and time block, onset/expires,
@@ -10,6 +10,8 @@ otherwise the station point (-31.8506, -65.4294) must be inside a polygon. Expir
 Known quirk: short-term warning times are UTC written with a '-03:00' suffix (file 2026_11_16_1903 = 16:03 ART);
 when a short-term item is first seen with its 'sent' time in the future it is shifted by -3 h.
 Output (only while something is active): data/smn-alerts.json -> Firestore private/smnAlerts (fs_sync) -> app banner.
+Each alert also carries 'en' = English headline/description/instruction made by smn_i18n.py (rules; SMN_MT=1 adds a
+machine-translation fallback) so the app can follow the selected language; pushes already use each user's saved language.
 Pushes: ONE per new alert. An updated/re-issued alert for the same event with an equal or lower level whose time
 overlaps (or is within 1 h of) one already pushed is not pushed again; a higher level is ('upgrade').
 When the last pushed alert has ended, one quiet 'SMN alerts ended' push. State: data/smn-state.json.
@@ -210,8 +212,14 @@ def send(pushes, dry):
             req(f"{FS}/pushSubs/{uid}?updateMask.fieldPaths=subs", {"fields": {"subs": {"mapValue": {"fields": keep}}}}, tok=tok, method="PATCH")
     print("smn: sent", n, "pushes to", len(uids), "users"); return n
 
-def public(a):
-    return {k: a.get(k) for k in ("id", "kind", "level", "event", "headline", "onset", "expires", "sent", "description", "instruction", "areaDesc", "url", "match", "severity")}
+def public(a, tr=None):
+    o = {k: a.get(k) for k in ("id", "kind", "level", "event", "headline", "onset", "expires", "sent", "description", "instruction", "areaDesc", "url", "match", "severity")}
+    # English versions for the app (SMN's Spanish stays in headline/description/instruction); see smn_i18n.py
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import smn_i18n
+        o["en"] = smn_i18n.english(a, tr if tr is not None else {}, ev_en)
+    except Exception as e: print("smn: translation failed", type(e).__name__); o["en"] = None
+    return o
 
 def main():
     now = dt.datetime.fromisoformat(os.environ["SIM_NOW"]) if os.environ.get("SIM_NOW") else dt.datetime.now(TZ)
@@ -222,11 +230,13 @@ def main():
     except Exception as e:
         print("smn: feed failed:", type(e).__name__, getattr(e, "code", "")); return
     state["cache"] = cache
-    before = json.dumps({k: v for k, v in state.items() if k != "cache"}, sort_keys=True)
+    before = json.dumps({k: v for k, v in state.items() if k not in ("cache", "tr")}, sort_keys=True)
     state, pushes = step(state, alerts, now)
     lv = lambda a: (-LEVELS[a["level"]], a["onset"])
-    out = {"source": "SMN – Servicio Meteorológico Nacional (CC BY 4.0)", "feed": FEED, "area": "San Alberto, Córdoba",
-           "alerts": [public(a) for a in sorted(alerts, key=lv)]}
+    tr = state.setdefault("tr", {})
+    out = {"source": "SMN – Servicio Meteorológico Nacional (CC BY 2.5 AR)", "feed": FEED, "area": "San Alberto, Córdoba",
+           "alerts": [public(a, tr) for a in sorted(alerts, key=lv)]}
+    if len(tr) > 300: state["tr"] = dict(list(tr.items())[-300:])
     print("smn:", len(cache), "feed items,", len(alerts), "active for San Alberto", "|", ", ".join(f"{a['level']} {a['event']} until {a['expires'][:16]}" for a in sorted(alerts, key=lv)) or "none", "| pushes:", len(pushes))
     try: n = send(pushes, dry)
     except Exception as e: print("smn: send failed:", type(e).__name__, getattr(e, "code", "")); n = 0
@@ -243,5 +253,5 @@ def main():
     if old is None or old.get("alerts") != out["alerts"]:
         out["updated"] = now.isoformat(timespec="minutes"); json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=1)
     json.dump(state, open(ST, "w"), ensure_ascii=False)
-    if json.dumps({k: v for k, v in state.items() if k != "cache"}, sort_keys=True) != before: print("smn: state changed")
+    if json.dumps({k: v for k, v in state.items() if k not in ("cache", "tr")}, sort_keys=True) != before: print("smn: state changed")
 if __name__ == "__main__": main()

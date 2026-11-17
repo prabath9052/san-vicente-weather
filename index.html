@@ -362,6 +362,7 @@ html[data-theme=dark] .smn-a.lv-yellow{background:#3a3310;border-color:#e6c200;c
 html[data-theme=dark] .smn-a.lv-orange{background:#45280c;border-color:#ff8c1a;color:#ffd9b0}
 html[data-theme=dark] .smn-a.lv-red{background:#4a1515;border-color:#ff4d4d;color:#ffd0cc}
 .smn-lv{font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px;background:currentColor;color:inherit}.smn-a .smn-lv{background:#0000001a}html[data-theme=dark] .smn-a .smn-lv{background:#ffffff22}
+.smn-in{white-space:pre-line}.smn-o{margin-top:6px;opacity:.85}.smn-o summary{cursor:pointer;font-size:.76rem;font-weight:600}.smn-note{font-size:.74rem;font-style:italic;opacity:.85}.smn-s a.smn-lic{font-weight:600}
 </style><style id="popc">/* tab bar stays above popups (backdrops are z 2000-3000; model popup .mpop 9999 and sign-in 100000 stay on top) */
 body.svov .tabs{z-index:3600}
 .tabs.tb-pin{position:fixed;top:var(--pt);left:var(--pl);width:var(--pw);max-width:none;margin:0;box-sizing:border-box;box-shadow:0 6px 24px #0005}
@@ -1139,6 +1140,9 @@ async function renderAl(msg){window.svBell&&setTimeout(()=>svBell.pushState(),0)
 async function save(sub,del){const ref=F().doc(D(),'pushSubs',UID),k=ekey(sub.endpoint);
  if(del)return F().setDoc(ref,{subs:{[k]:F().deleteField()},updated:F().serverTimestamp()},{merge:true});
  return F().setDoc(ref,{user:U,lang:window.SV_LANG||'en',updated:F().serverTimestamp(),subs:{[k]:JSON.stringify(sub.toJSON())}},{merge:true})}
+// pushes are written in each user's saved language: keep it in step with the language picked in the app
+document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.lang button'))return;setTimeout(async()=>{try{if(!UID||!F()||!SUP||Notification.permission!=='granted')return;const s=await curSub();if(!s)return;
+ const L=window.SV_LANG||'en';if(window.__svPushLang===L)return;await F().setDoc(F().doc(D(),'pushSubs',UID),{lang:L,updated:F().serverTimestamp()},{merge:true});window.__svPushLang=L}catch(err){console.warn('push lang',err.message)}},400)});
 async function enable(){try{const p=await Notification.requestPermission();if(p!=='granted')return renderAl(t('Permission not granted.','Permiso no otorgado.'));
  const r=REG||await navigator.serviceWorker.ready;let s=await r.pushManager.getSubscription();if(!s)s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(VAPID)});
  await save(s);renderAl(t('Alerts enabled on this device.','Alertas activadas en este dispositivo.'))}catch(e){console.error(e);renderAl(t('Could not enable: ','No se pudo activar: ')+e.message)}}
@@ -1558,7 +1562,8 @@ G.addEventListener('svstation',later);document.addEventListener('click',e=>{if(e
 /*SPRAY-END*/
 </script>
 <script>// ===== Official SMN alerts for San Alberto (Córdoba): banner at the top of the Forecast tab =====
-// Data: Firestore private/smnAlerts, written by scripts/smn_alerts.py from the public SMN CAP feed (CC BY 4.0).
+// Data: Firestore private/smnAlerts, written by scripts/smn_alerts.py from the public SMN CAP feed (SMN open data, CC BY 2.5 AR).
+// SMN writes in Spanish; each alert carries 'en' (English headline/description/instruction from scripts/smn_i18n.py) used when the app is in English.
 // Read through svFetchPriv, so the offline view keeps the last copy. Expired alerts are dropped here too. Hidden when none.
 (function(G){const $=id=>document.getElementById(id),ES=()=>G.SV_LANG==='es',tx=(e,s)=>ES()?s:e;let D=null;
  const LV={yellow:['Yellow alert','Alerta amarilla','🟡'],orange:['Orange alert','Alerta naranja','🟠'],red:['Red alert','Alerta roja','🔴']},RK={red:3,orange:2,yellow:1};
@@ -1576,10 +1581,14 @@ G.addEventListener('svstation',later);document.addEventListener('click',e=>{if(e
    const lvl=tx(L[0].split(' ')[0],L[1].split(' ')[1].replace(/^./,c=>c.toUpperCase()));
    const head=st?`⛈️ <b>${tx('Short-term warning','Aviso a corto plazo')}: ${esc(ev(a.event))}</b><span class="smn-lv">${lvl}</span>`:`⚠️ <b>${tx(L[0],L[1])}: ${esc(ev(a.event))}</b>`;
    const when=`${up?tx('Starts','Comienza'):tx('In effect','Vigente')}: ${rng}`;
-   const desc=[a.headline&&st?`<p><b>${esc(a.headline)}</b></p>`:'',a.description&&a.description!==a.headline?`<p>${esc(a.description)}</p>`:'',a.instruction?`<p class="smn-in">${esc(a.instruction)}</p>`:''].join('');
+   const box=(h,d,i)=>[h&&st?`<p><b>${esc(h)}</b></p>`:'',d&&d!==h?`<p>${esc(d)}</p>`:'',i?`<p class="smn-in">${esc(String(i).replace(/\s+(?=\d{1,2}\s*-\s)/g,'\n'))}</p>`:''].join('');
+   // English: SMN's text translated by the backend (rule based; 'mt' = machine translation); any field without a translation stays in Spanish
+   const E=a.en||{},en=!ES(),tr=en&&!!(E.description||E.instruction||(st&&E.headline)),full=tr&&(!a.description||E.description)&&(!a.instruction||E.instruction)&&(!st||!a.headline||E.headline);
+   const orig=box(a.headline,a.description,a.instruction),desc=tr?box(E.headline||a.headline,E.description||a.description,E.instruction||a.instruction)+(full?'':`<p class="smn-note">${'Some parts have no English translation and are shown in Spanish.'}</p>`)+`<details class="smn-o"><summary>Original (Spanish)</summary>${orig}</details>`:orig;
+   const sum=ES()?'Descripción del SMN':tr?`SMN description (English${E.how==='mt'||E.how==='mixed'?', machine-translated':''})`:'SMN description (Spanish – no English translation available)';
    return `<div class="smn-a lv-${a.level}${st?' st':''}" role="alert"><div class="smn-h">${head}<span class="smn-tag">SMN</span></div><div class="smn-w">${when}</div>`+
-    `<details class="smn-d"${i===0&&G.__SMNOPEN?' open':''}><summary>${tx('SMN description (Spanish)','Descripción del SMN')}</summary>${desc||'<p>—</p>'}</details>`+
-    `<div class="smn-s">${tx('Source: SMN','Fuente: SMN')} (Servicio Meteorológico Nacional, CC BY 4\u2060.0) · San Alberto, Córdoba · <a href="${esc(a.url)}" target="_blank" rel="noopener">${tx('Official CAP alert','Alerta CAP oficial')} ↗</a></div></div>`}).join('');
+    `<details class="smn-d"${i===0&&G.__SMNOPEN?' open':''}><summary>${sum}</summary>${desc||'<p>—</p>'}</details>`+
+    `<div class="smn-s">${tx('Source: SMN','Fuente: SMN')} (Servicio Meteorológico Nacional, <a href="https://creativecommons.org/licenses/by/2.5/ar/" target="_blank" rel="noopener" class="smn-lic">CC BY 2\u2060.5 AR</a>)${tr?' · translated from Spanish by San Vicente Weather':''} · San Alberto, Córdoba · <a href="${esc(a.url)}" target="_blank" rel="noopener">${tx('Official CAP alert','Alerta CAP oficial')} ↗</a></div></div>`}).join('');
   b.hidden=false}
  async function load(){try{if(!G.svFetchPriv)return;const r=await svFetchPriv('smnAlerts','about:blank');if(r.ok)D=await r.json()}catch(e){}render()}
  G.svSmnRender=render;G.svSmnLoad=load;
