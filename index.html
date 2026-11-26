@@ -283,6 +283,8 @@ html[data-theme=dark] .hl-b{background:#3b2f10;color:#ffe2a0;border-color:#6b542
 .off-b[hidden]{display:none}html[data-theme=dark] .off-b{background:#22313c;color:var(--fg);border-color:#34444f}
 
 body.sv-off #status{display:none}
+
+.hl-b .hl-t>div+div{margin-top:4px}
 </style><style id="dkc">/* ===== Dark mode for all charts (station graphs, tile popups, hourly rain chart, Forecast vs station, rain map legend).
    CSS overrides the SVG presentation attributes, so switching the theme recolours charts live without re-rendering. ===== */
 html[data-theme=dark]{--ch-bg:#121d26;--ch-grid:#24333f;--ch-grid2:#1d2a34;--ch-mid:#4a5b69;--ch-frame:#34444f;--ch-txt:#a9bac7;--ch-txt2:#c9d6df}
@@ -1451,21 +1453,32 @@ window.addEventListener('svstation',mark);
 if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
 window.svTileGraph=open;})();
 </script>
-<script>// ===== Station health banner: station offline (no new reading > 2 h) or a sensor reading something impossible =====
+<script>// ===== Station health banner: station offline (no new reading > 2 h), data delayed because OUR update job is late
+// (the station was uploading normally at the job's last check), or a sensor reading something impossible =====
+// 'Delayed' vs 'offline' uses Firestore private/heartbeat (scripts/heartbeat.py: when the update job last checked HOBOlink
+// and the station's last HOBOlink connection then); without it, the reading's 'fetched' time is used.
 // Sources: the latest station reading (client-side age check, works even if the scheduled check stops) and
 // Firestore private/healthState written by scripts/station_health.py (sensor problems). Hidden while the phone itself is offline.
-(function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',OFF_MIN=120;let HS=null,hid='';
+(function(){const $=id=>document.getElementById(id),ES=()=>window.SV_LANG==='es',OFF_MIN=120,LATE_MIN=40,WATCH_MIN=60;let HS=null,HB=null,hid='';
  const tm=s=>{try{return new Date(s).toLocaleString(ES()?'es-AR':'en-GB',{timeZone:'America/Argentina/Buenos_Aires',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})}catch(e){return s}};
  function box(){let b=$('hlBanner');if(!b){b=document.createElement('div');b.id='hlBanner';b.className='hl-b';b.setAttribute('role','alert');b.hidden=true;const m=document.querySelector('main');m.insertBefore(b,m.firstChild)}return b}
  function render(){const b=box(),es=ES(),L=[];const st=window.SVST;if(window.SV_OFFLINE){b.hidden=true;return}
-  const ob=st&&st.observed?Date.parse(st.observed):null,age=ob?(Date.now()-ob)/6e4:null;
-  if(st&&(age==null||age>OFF_MIN)){const h=age==null?'—':age<90?Math.round(age)+' min':Math.round(age/60)+' h';
+  const now=Date.now(),ob=st&&st.observed?Date.parse(st.observed):null,age=ob?(now-ob)/6e4:null;
+  const P=s=>{const v=s?Date.parse(s):NaN;return isFinite(v)?v:null},chk=Math.max(P(HB&&HB.at)||0,P(st&&st.fetched)||0)||null,jobAge=chk?(now-chk)/6e4:null;
+  const lc=P((HB&&HB.lastConnection)||(st&&st.lastConnection)),stOk=!!(chk&&lc&&ob&&(chk-lc)/6e4<=60&&(chk-ob)/6e4<=60);
+  const hm=s=>{const d=new Date(s),o={timeZone:'America/Argentina/Buenos_Aires'},k=x=>x.toLocaleDateString('en-CA',o);return k(d)===k(new Date())?d.toLocaleTimeString('en-GB',{...o,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}):tm(s)};
+  const ago=m=>m<90?Math.round(m)+' min':Math.round(m/60)+' h';
+  if(st&&ob&&jobAge!=null&&jobAge>LATE_MIN&&age>LATE_MIN&&stOk){
+   // the station was fine when we last looked: our update job (GitHub) is late, not the station
+   L.push(['late',es?`⏳ <b>Datos de la estación demorados (servicio de actualización atrasado)</b> – última lectura ${hm(st.observed)} ART. La estación estaba en línea en nuestro último control (${hm(chk)} ART); las lecturas nuevas aparecerán cuando el servicio vuelva a actualizar.`:`⏳ <b>Station data delayed (update service late)</b> – last reading ${hm(st.observed)} ART. The station was online at our last check (${hm(chk)} ART); new readings will appear when the update service runs again.`])}
+  else if(st&&(age==null||age>OFF_MIN)){const h=age==null?'—':age<90?Math.round(age)+' min':Math.round(age/60)+' h';
    L.push(['off',es?`📡 <b>Estación sin datos</b>: no llegan lecturas nuevas desde ${tm(st.observed)} ART (hace ${h}). Se muestran las últimas recibidas.`:`📡 <b>Station offline</b>: no new readings since ${tm(st.observed)} ART (${h} ago). Showing the last readings received.`])}
+  if(window.SV_ISADMIN&&jobAge!=null&&jobAge>WATCH_MIN)L.push(['watch',es?`🛠️ <b>Admin</b>: el servicio de actualización no corre hace ${ago(jobAge)} (último control ${hm(chk)} ART). El horario de GitHub está atrasado o la cadena de ejecuciones se detuvo: revisá GitHub Actions.`:`🛠️ <b>Admin</b>: the update service has not run for ${ago(jobAge)} (last check ${hm(chk)} ART). GitHub's schedule is late or the run chain stopped – check GitHub Actions.`]);
   const A=(HS&&HS.active)||{};for(const k in A){if(k==='offline')continue;const x=A[k];L.push([k,`⚠️ <b>${es?'Revisión de sensor':'Sensor check'}</b>: ${es?x.es:x.en}${x.since?` <small>(${es?'desde':'since'} ${tm(x.since)} ART)</small>`:''}`])}
   const key=L.map(x=>x[0]).join(',');if(!L.length||key===hid){b.hidden=true;return}
   b.innerHTML=`<div class="hl-t">${L.map(x=>`<div>${x[1]}</div>`).join('')}</div><button type="button" class="hl-x" aria-label="${es?'Ocultar':'Hide'}">✕</button>`;
   b.querySelector('.hl-x').onclick=()=>{hid=key;b.hidden=true};b.hidden=false}
- async function load(){try{if(!window.svFetchPriv)return;const r=await svFetchPriv('healthState','about:blank');if(r.ok)HS=await r.json()}catch(e){}render()}
+ async function load(){if(!window.svFetchPriv)return render();await Promise.all([svFetchPriv('healthState','about:blank').then(async r=>{if(r.ok)HS=await r.json()}).catch(()=>{}),svFetchPriv('heartbeat','about:blank').then(async r=>{if(r.ok)HB=await r.json()}).catch(()=>{})]);render()}
  window.svHealthRender=render;window.addEventListener('svstation',render);window.addEventListener('load',()=>setTimeout(load,1200));setInterval(load,5*60e3);setInterval(render,60e3);
  document.addEventListener('click',e=>{if(e.target.closest('.lang button'))setTimeout(render,200)});
 })();

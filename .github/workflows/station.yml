@@ -1,6 +1,11 @@
 name: Update station current conditions
-# GitHub delays */15 schedules (measured 21-51 min gaps), so each run keeps polling
-# HOBOlink for ~27 min (station logs/uploads every 10 min). Station data, alert history and alert state are
+# GitHub's cron for this repo is unreliable (since 19 Nov 2026 runs start only every ~7-10 h), so each run polls
+# HOBOlink for ~5.5 h (station logs/uploads every 10 min) and, ~12 min before it ends, starts the NEXT run itself
+# (workflow_dispatch with the built-in GITHUB_TOKEN, scripts/station_chain.py). The concurrency group keeps that
+# run waiting until this one ends, so polling is continuous. Guards: one running + one waiting run at most; no
+# dispatch if a run is already waiting (e.g. a late cron run); default branch only; never for test runs; repository
+# variable STATION_CHAIN=off stops the chain. The cron below stays as the backup restarter.
+# Station data, alert history and alert state are
 # private: restored from Firestore 'private/*' at start (fs_pull) and saved back after each reading (fs_sync).
 # Each pass also checks station health and (every 10 min) official SMN alerts for San Alberto.
 # Nothing is committed to the repo.
@@ -15,15 +20,19 @@ on:
       only_uid:
         description: 'TEST: only send to this Firebase uid'
         required: false
+      chain:
+        description: 'Set by the previous run (self-chaining); leave empty'
+        required: false
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: station
   cancel-in-progress: false
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v7
       - name: Install
@@ -36,13 +45,21 @@ jobs:
           FB_BOT_PASSWORD: ${{ secrets.FB_BOT_PASSWORD }}
           FORCE_THRESHOLD: ${{ github.event.inputs.force_threshold }}
           ONLY_UID: ${{ github.event.inputs.only_uid }}
+          CHAIN_RUN: ${{ github.event.inputs.chain }}
+          # self-chaining (scripts/station_chain.py)
+          GITHUB_TOKEN: ${{ github.token }}
+          STATION_CHAIN: ${{ vars.STATION_CHAIN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          WORKFLOW_FILE: station.yml
         run: |
+          START=$(date +%s); echo "RUN_START=$START" >> "$GITHUB_ENV"
           python3 -u scripts/fs_pull.py
           obs() { python3 -c "import json;print(json.load(open('data/station.json')).get('observed',''))" 2>/dev/null; }
-          END=$(( $(date +%s) + 27*60 )); [ -n "$FORCE_THRESHOLD" ] && END=0
-          last=$(obs); first=1
+          # poll ~5.5 h (job limit 6 h, timeout 350 min); hand over to the next run 12 min before the end
+          END=$(( START + 330*60 )); HANDOFF=$(( END - 12*60 )); handed=0; [ -n "$FORCE_THRESHOLD" ] && END=0
+          last=$(obs); first=1; hb_t=0
           while :; do
-            if python3 -u scripts/fetch_station.py; then
+            if python3 -u scripts/fetch_station.py; then fok=1
               now=$(obs)
               if [ "$now" != "$last" ] || [ $first = 1 ] || [ -n "$FORCE_THRESHOLD" ]; then
                 echo "reading $now"
@@ -52,7 +69,10 @@ jobs:
                 python3 -u scripts/fs_sync.py || true
                 last=$now
               fi
-            else echo "fetch failed (will retry)"; fi
+            else echo "fetch failed (will retry)"; fok=0; fi
+            # heartbeat for the app ('update late' vs 'station offline'): every pass, saved at most every 10 min
+            python3 -u scripts/heartbeat.py $fok || true
+            if [ -z "$FORCE_THRESHOLD" ] && [ $(( $(date +%s) - hb_t )) -ge 600 ]; then hb_t=$(date +%s); ONLY_DOCS=heartbeat python3 -u scripts/fs_sync.py || true; fi
             # station health (offline / impossible readings): every pass, also when nothing new arrived; test runs never send
             if [ -n "$FORCE_THRESHOLD" ]; then DRY_RUN=1 STATE_FILE=/tmp/health-test.json python3 -u scripts/station_health.py || true
             else h0=$(cat data/health-state.json 2>/dev/null | sha1sum); python3 -u scripts/station_health.py || echo "health check failed (continuing)"
@@ -63,6 +83,21 @@ jobs:
               else s0=$(cat data/smn-alerts.json data/smn-state.json 2>/dev/null | sha1sum); python3 -u scripts/smn_alerts.py || echo "smn alerts step failed (continuing)"
                 if [ "$s0" != "$(cat data/smn-alerts.json data/smn-state.json 2>/dev/null | sha1sum)" ]; then ONLY_DOCS=smnAlerts,smnState,alertsLog python3 -u scripts/fs_sync.py || true; fi; fi; fi
             first=0
-            [ $(date +%s) -ge $END ] && break
+            if [ $handed = 0 ] && [ -z "$FORCE_THRESHOLD" ] && [ "$(date +%s)" -ge "$HANDOFF" ]; then handed=1
+              MODE=handoff python3 -u scripts/station_chain.py || echo "chain: handoff step failed (cron backup will restart)"
+              echo "CHAIN_HANDED=1" >> "$GITHUB_ENV"; fi
+            [ "$(date +%s)" -ge "$END" ] && break
             sleep 150
           done
+      # the run stopped early (error / timeout) before handing over: start the next run anyway if it polled
+      # long enough (>= 20 min, so a run that crashes at start can't loop); never for cancelled or test runs
+      - name: Chain after early stop
+        if: ${{ !cancelled() && env.CHAIN_HANDED != '1' && github.event.inputs.force_threshold == '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STATION_CHAIN: ${{ vars.STATION_CHAIN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          WORKFLOW_FILE: station.yml
+          MODE: final
+          MIN_AGE_MIN: '20'
+        run: python3 -u scripts/station_chain.py || true
