@@ -10,3 +10,4 @@ data/eto-state.json
 data/health-state.json
 data/smn-alerts.json
 data/smn-state.json
+data/heartbeat.json
